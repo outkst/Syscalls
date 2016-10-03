@@ -33,3 +33,4 @@ class Semaphore {
     }
 }
 ```
+Atomicity is achieved using spin locks
