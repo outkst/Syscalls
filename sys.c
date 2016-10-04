@@ -2358,15 +2358,18 @@ int orderly_poweroff(bool force)
 }
 EXPORT_SYMBOL_GPL(orderly_poweroff);
 
-
+typedef struct
+{
+	int value;
+} cs1550_sem;
 
 /*
 	CS1550 custom semaphore UP command
 */
 // asmlinkage long sys_cs1550_up(struct cs1550_sem *sem) {
-asmlinkage long sys_cs1550_up() {
-	long retval = 666;
-	return retval;
+asmlinkage long sys_cs1550_up(cs1550_sem *sem) {
+	sem->value++;
+	return 0;
 }
 
 
@@ -2374,7 +2377,12 @@ asmlinkage long sys_cs1550_up() {
 	CS1550 custom semaphore DOWN command
 */
 // asmlinkage long sys_cs1550_down(struct cs1550_sem *sem) {
-asmlinkage long sys_cs1550_down() {
-	long retval = 999;
-	return retval;
+asmlinkage long sys_cs1550_down(cs1550_sem *sem) {
+	// value -= 1;
+ //    if (value < 0) {                    // add this process to process list
+ //        pl.enqueue(currentProcess);
+ //        Sleep();                        // Put this process/thread to sleep
+ //    }
+	sem->value++;
+	return 0;
 }
