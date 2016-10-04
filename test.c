@@ -1,13 +1,38 @@
 #include <stdio.h>	/* DEBUG */
-#include <unistd.h>
+#include <unistd.h> /* custom UP() and DOWN() syscalls */
+
+typedef struct
+{
+	int value;
+} cs1550_sem;
+
+cs1550_sem sem;
+
+void up(cs1550_sem *sem);
+void down(cs1550_sem *sem);
 
 int main() {
-	long retval;
-	retval = syscall(__NR_cs1550_up);
-	printf("Tried calling __NR_cs1550_up, result should be 666: %ld\n", retval);
+	sem.value=100;
 
-	retval = syscall(__NR_cs1550_down);
-	printf("Tried calling __NR_cs1550_down, result should be 999: %ld\n", retval);
-	
+	printf("sem.value = %d\n", sem.value);
+
+	printf("calling UP() with value=%d\n", sem.value);
+	up(&sem);
+	printf("UP() returned sem.value+1? %d\n", sem.value);
+
+	printf("calling __NR_cs1550_down with test=%d\n", sem.value);
+	down(&sem);
+	printf("DOWN() returned sem.value+1? %d\n", sem.value);
+
 	return 0;
+}
+
+void up(cs1550_sem *sem) {
+	int i = syscall(__NR_cs1550_up, sem);
+	printf("\tsyscall returned: %d\n", i);
+}
+
+void down(cs1550_sem *sem) {
+	int i = syscall(__NR_cs1550_down, sem);
+	printf("\tsyscall returned: %d\n", i);
 }
