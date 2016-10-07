@@ -1,15 +1,15 @@
 #include <stdio.h>	/* DEBUG */
 #include <unistd.h> /* custom UP() and DOWN() syscalls */
 
-typedef struct
+struct cs1550_sem
 {
 	int value;
-} cs1550_sem;
+};
 
-cs1550_sem sem;
+void up(struct cs1550_sem *sem);
+void down(struct cs1550_sem *sem);
 
-void up(cs1550_sem *sem);
-void down(cs1550_sem *sem);
+struct cs1550_sem sem;
 
 int main() {
 	sem.value=100;
@@ -27,12 +27,12 @@ int main() {
 	return 0;
 }
 
-void up(cs1550_sem *sem) {
+void up(struct cs1550_sem *sem) {
 	int i = syscall(__NR_cs1550_up, sem);
 	printf("\tsyscall returned: %d\n", i);
 }
 
-void down(cs1550_sem *sem) {
+void down(struct cs1550_sem *sem) {
 	int i = syscall(__NR_cs1550_down, sem);
 	printf("\tsyscall returned: %d\n", i);
 }
