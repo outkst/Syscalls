@@ -2360,6 +2360,17 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 /* CREATE CUSTOM PROD/CON UP AND DOWN SEMAPHORE IMPLEMENTATION */
 	DEFINE_SPINLOCK(sem_lock);	
 
+	/*
+		This custom DOWN operation will perform a kernel lock and then
+		operate on the given semaphore. This semaphore will be changed to
+		reflect that a named resource has been decremented. At any time that
+		the semaphore's value becomes negative, then this will trigger a 
+		SLEEP event. The process will be put to sleep and a SCHEDULE event
+		will be triggered to run another (any) ready process.
+
+		During this operation, no other process may alter this semaphore. 
+		This is the definition of a CRITICAL REGION.
+	*/
 	asmlinkage long sys_cs1550_down(struct cs1550_sem *sem) 
 	{
 		/* ENTER CRITICAL REGION (set the kernel lock) */
@@ -2368,23 +2379,23 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		printk(KERN_WARNING "    semaphore value         (current) %d\n", sem->value);
 
 		sem->value--;
-		if (sem->value < 0) {
+		if (sem->value < 0) {						// ENQUEUE the current process
 			/* create a new task node to enqueue */
 			struct proc_node *node = (struct proc_node *) kmalloc(sizeof(struct proc_node), GFP_KERNEL);
 
 			node->process = current;				// global 'CURRENT' holds current process (task_struct)
 			node->next = NULL;						// new nodes will never reference anything
 
-			if (sem->head == NULL) {				// the queue is currently empty
-				sem->head = node;					// insert node at head (FiFo)
+			if (sem->head == NULL) {
+				sem->head = node;					// insert node at head (enqueue) b/c queue is empty
 			} else {
-				sem->tail->next = node;				// insert node after tail
+				sem->tail->next = node;				// insert node after tail (enqueue)
 			}
-			sem->tail = node;						// node becomes the new tail
+			sem->tail = node;						// this node becomes the new tail
 
-			set_current_state(TASK_INTERRUPTIBLE);	// allow immediate interrupt (aka sleep)
+			set_current_state(TASK_INTERRUPTIBLE);	// allow immediate interrupt (aka SLEEP)
 			spin_unlock(sem_lock);					// release lock now to avoid deadlock
-			schedule();								// tell OS to schedule another process
+			schedule();								// tell OS to schedule another process (CONTEXT-SWITCH)
 		}
 
 		/* EXIT CRITICAL REGION (release the kernel lock) */
@@ -2395,6 +2406,18 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		return 0;
 	}
 
+	/*
+		This custom UP operation will perform a kernel lock and then
+		operate on the given semaphore. This semaphore will be changed to
+		reflect that a named resource has been incremented. At any time that
+		the semaphore's value remains zero or negative, then this will trigger
+		a WAKE event. The earliest-queued process in the process list will be
+		dequeued and then woken up. Upon being woken up, it can then be chosen
+		by the scheduler to run.
+
+		During this operation, no other process may alter this semaphore. 
+		This is the definition of a CRITICAL REGION.
+	*/
 	asmlinkage long sys_cs1550_up(struct cs1550_sem *sem) 
 	{
 		/* ENTER CRITICAL REGION (set the kernel lock) */
@@ -2403,7 +2426,7 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		printk(KERN_WARNING "    semaphore value         (current) %d\n", sem->value);
 
 		sem->value++;
-		if (sem->value <= 0) {
+		if (sem->value <= 0) {						// DEQUEUE a process to run (FiFo)
 			/* find process to dequeue (if any) */
 
 			struct proc_node *node = sem->head;		// get the head of the process queue/list
@@ -2412,8 +2435,7 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 				proc = node->process;				// get first-in node (dequeue)
 
 				if (node != sem->tail) {
-					sem->head = node->next;			// head moved to the next node. cur node will be freed.
-
+					sem->head = node->next;			// head moved to the next node. old head will be freed.
 				} else {
 					sem->head = NULL;				// we have dequeued all nodes; purge.
 					sem->tail = NULL;				// we have dequeued all nodes; purge.
