@@ -56,7 +56,16 @@ void *MEM_BASE_PTR;
 void *MEM_EMPTY;
 void *MEM_FULL;
 void *MEM_MUTEX;
-void *MEM_BUF;
+int *MEM_CUR_PROD;
+int *MEM_CUR_CON;
+int *MEM_BUF;
+
+int in;
+int out;
+int resources;
+struct cs1550_sem *sem_empty;
+struct cs1550_sem *sem_full;
+struct cs1550_sem *sem_mutex;
 
 void consumer();
 void cs1550_up(struct cs1550_sem *sem);
@@ -69,176 +78,133 @@ void producer();
 	argc 	holds number of arguments
 	argv	holds the value of each argument
 */
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int num_prods;			// number of producers (chefs)
 	int num_cons;			// number of consumers (customers)
 	int size_buffer;		// buffer size (value)
 
-	// branch between Owner and Children
-	//int pid = fork();
+	// get the user input for Producers Consumers Resources
+	if (argc != 4) {
+		printf("Please provide correct parameters: \n\n\t./prodcons [numprods] [numcons] [numresources]");
+		exit(1);
 
-	// get the user input
-	// if (argc != 4) {
-	// 	printf("Please provide correct parameters: \n\n\t./prodcons [numprods] [numcons] [numresources]");
-	// 	exit(1);
-
-	// } else {
-	// 	num_prods = atoi(argv[1]);
-	// 	num_cons = atoi(argv[2]);
-	// 	size_buffer = atoi(argv[3]);
-	// }
-
-	num_prods = 5;
-	num_cons = 5;
-	size_buffer = 100;
+	} else {
+		num_prods = atoi(argv[1]);
+		num_cons = atoi(argv[2]);
+		size_buffer = atoi(argv[3]);
+	}
 
 	/* 
 		Begin by creating a SHARED Read/Write memory map to be used across fork()'s.
 
 		3x semaphores	(empty, full, and mutex)
 		2x ints			(current producer place, current consumer place)
-		1x buffer		()
+		1x buffer		(the number of (int) resources)
 	*/
 	int MAPSIZE = ((sizeof(struct cs1550_sem)) * 3 * (sizeof(int)) * 2 * (sizeof(int)*size_buffer));
 	MEM_BASE_PTR = (void *) mmap(NULL, MAPSIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
 
-	if(MEM_BASE_PTR == (void *) -1) 
+	if(MEM_BASE_PTR == (void *) -1)
 	{
 		fprintf(stderr, "Error mapping memory\n");
 		exit(1);
 	}
 
 	/* Good to go, initialize pointers to this newly mapped, shared space */
-	int *base_ptr = MEM_BASE_PTR;
-	int *new_ptr;
-	int *curr_ptr = base_ptr;
-	int sem_size = sizeof(struct cs1550_sem);
-	curr_ptr = curr_ptr + sem_size;
-	if(curr_ptr > base_ptr + MAPSIZE) 
-	{
-		fprintf(stderr, "Address out of range\n");
-		exit(1);
-	}
-	else
-	{
-		new_ptr = curr_ptr - sem_size;
-	}
+	int sem_size = sizeof(struct cs1550_sem);	// get the size of a semaphore struct
+	MEM_EMPTY = MEM_BASE_PTR;					// EMPTY sem at first location of mapped memory
+	MEM_FULL = MEM_BASE_PTR + sem_size;			// FULL sem at second location of mapped memory
+	MEM_MUTEX = MEM_FULL + sem_size;			// MUTEX sem at third location of mapped memory
+	MEM_CUR_PROD = MEM_MUTEX + sem_size;		// CURRENT PRODUCER resource number
+	MEM_CUR_CON = MEM_CUR_PROD + sizeof(int);	// CURRENT CONSUMER resource number
+	MEM_BUF = MEM_MUTEX + sem_size;				// BUFFER at sixth (final) location of mapped memory
 
-	MEM_EMPTY = base_ptr;				// EMPTY sem at first location of mapped memory
-	MEM_FULL = base_ptr + sem_size;		// FULL sem at second location of mapped memory
-	MEM_MUTEX = MEM_FULL + sem_size;	// MUTEX sem at third location of mapped memory
-	MEM_BUF = MEM_MUTEX + sem_size;		// BUFFER at final location of mapped memory
+	sem_empty = (struct cs1550_sem *) MEM_EMPTY;	// make MEM_EMPTY reference into cs1550_sem reference
+	sem_full = (struct cs1550_sem *) MEM_FULL;		// make MEM_FULL reference into cs1550_sem reference
+	sem_mutex = (struct cs1550_sem *) MEM_MUTEX;	// make MEM_MUTEX reference into cs1550_sem reference
 
-	struct cs1550_sem *sem_empty = (struct cs1550_sem *) MEM_EMPTY;
-	struct cs1550_sem *sem_full = (struct cs1550_sem *) MEM_FULL;
-	struct cs1550_sem *sem_mutex = (struct cs1550_sem *) MEM_MUTEX;
+	in = *((int*)MEM_CUR_PROD);			// make MEM_CUR_PROD reference into (int) reference
+	out = *((int*)MEM_CUR_CON);			// make MEM_CUR_CON reference into (int) reference
+	resources = size_buffer;			// global shared resources equal to user-input buffer size
 
 	sem_empty->value = size_buffer;		// value is equal to max resources (size of buffer)
 	sem_full->value = 0;				// no item is considered full in the beginning
-	sem_mutex->value = 1;				// mutex set
+	sem_mutex->value = 1;				// mutex set to 1 so that one process can successfully run. rest are queued.
 
 	/* Create X number of producers */
 	int i, j;
 	i = 0;
 	j = 0;
-	printf("\nEntering producer fork loop\n");
+	printf("\nENTERING PRODUCER FORK LOOP\n---------------------------\n");
 	for (i=0; i<num_prods; i++) {
-		printf("prods called: %d\n", i);
-		
+
 		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			printf("forked producer child\n");
+			printf("forked producer child #%d\n", i);
 			producer();								// use method w/infinite loop (no return)
 		}
 	}
 
-
 	/* Create X number of consumers */
-	printf("\nEntering consumer fork loop\n");
+	printf("\nENTERING CONSUMER FORK LOOP\n---------------------------\n");
 	for (j=0; j<num_cons; j++) {
-		printf("cons called: %d\n", j);
 
 		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			printf("forked producer child\n");
+			printf("forked producer child #%d\n", j);
 			consumer();								// use method w/infinite loop (no return)
 		}
 	}
 
-	printf("we are now going to loop indefinitely");
 	while (1) {
-		// stay alive so we don't have zombie processes (where pid=NULL)
+		// stay alive so we don't have zombie processes
 	}
 
-	// print_stuff(sem->value, base_ptr, curr_ptr, new_ptr);
-
-	// printf("** calling cs1550_down... **\n");
-	// cs1550_down(sem);
-	// printf("\n");
-
-	// sleep(2);
-
-	// print_stuff(sem->value, base_ptr, curr_ptr, new_ptr);
-
-	// printf("** calling cs1550_up... **\n");
-	// cs1550_up(sem);
-
-	// sleep(2);
-
-	// print_stuff(sem->value, base_ptr, curr_ptr, new_ptr);
+	return 0;
 }
 
 /* Make those marfkin pancakes */
 void producer() {
-	// int in = 0;
-	// int pitem;
 
-	// /* produce an item into pitem */
-	// while (1) {
-	// 	sleep(2);				// DEBUG
+	/* produce items into the buffer */
+	while (1) {
+		cs1550_down(sem_empty);				// attempt to produce one more item (one less empty)
 
-	// 	empty.down();			// attempt to produce one more item (one less empty)
+		/* ENTER CRITICAL REGION */
+		cs1550_down(sem_mutex);				// LOCK
 
-	// 	/* ENTER CRITICAL REGION */
-	// 	mutex.down();			// LOCK
+		MEM_BUF[in] = in;					// store resource number to show that something has been produced
+		in = (in+1) % resources;			// increment to next resource (with wrapping to beginning)
 
-	// 	buffer[in] = pitem;
-	// 	in = (in+1) % n;		// circular reference
+		printf("CHEF PRODUCED PANCAKE #%d\n", in);
+		cs1550_up(sem_mutex);				// UNLOCK
+		/* EXIT CRITICAL REGION */
 
-	// 	mutex.up();				// UNLOCK
-	// 	/* EXIT CRITICAL REGION */
-
-	// 	full.up();				// successfully produced one item (one more full)
-	// }
+		cs1550_up(sem_full);				// reflect that one item was produced (one more full)
+	}
 }
 
 /* Eat those delicious marfkin pancakes */
 void consumer() {
-	// int out = 0;
-	// int pitem;
+	int citem;
 
-	// /* consume an item from citem */
-	// while (1) {
-	// 	sleep(2);				// DEBUG
+	/* consume items from the buffer */
+	while (1) {
+		cs1550_down(sem_full);				// attempt to consume one more item (one less full)
 
-	// 	full.down();			// attempt to consume one more item (one less full)
+		/* ENTER CRITICAL REGION */
+		cs1550_down(sem_mutex);				// LOCK
 
-	// 	/* ENTER CRITICAL REGION */
-	// 	mutex.down();			// LOCK
+		citem = MEM_BUF[out];				// get the resource out
+		MEM_BUF[out] = -1;					// Show that this has been consumed
+		printf("item at position %d is %d\n", out, citem);
+		out = (out+1) % resources;			// increment to next resource (with wrapping to beginning)
+		printf("CUSTOMER ATE PANCAKE #%d\n", out);
 
-	// 	citem = buffer[out];
-	// 	out = (out+1) % n;
+		cs1550_up(sem_mutex);				// UNLOCK
+		/* EXIT CRITICAL REGION */
 
-	// 	mutex.up();				// UNLOCK
-	// 	/* EXIT CRITICAL REGION */
-
-	// 	empty.up();
-	// }
-}
-
-void print_stuff(int value, int *base_ptr, int *curr_ptr, int *new_ptr) {
-	printf("SEMAPHORE VALUE: (%d)\n", value);
-	printf("BASEPTR-ADDR (0x%08x), CURPTR-ADDR (0x%08x), NEWPTR-ADDR (0x%08x)\n", base_ptr, curr_ptr, new_ptr);
-	printf("BASEPTR (%d), CURPTR (%d), NEWPTR (%d)\n\n", *base_ptr, *curr_ptr, *new_ptr);
+		cs1550_up(sem_empty);				// reflect that one item was consumed (one more empty)
+	}
 }
 
 void cs1550_down(struct cs1550_sem *sem) 

@@ -2376,8 +2376,6 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		/* ENTER CRITICAL REGION (set the kernel lock) */
 		spin_lock(sem_lock);
 
-		printk(KERN_WARNING "    semaphore value         (current) %d\n", sem->value);
-
 		sem->value--;
 		if (sem->value < 0) {						// ENQUEUE the current process
 			/* create a new task node to enqueue */
@@ -2401,8 +2399,6 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		/* EXIT CRITICAL REGION (release the kernel lock) */
 		spin_unlock(sem_lock);
 
-		printk(KERN_WARNING "    semaphore value (after decrement) %d\n", sem->value);
-
 		return 0;
 	}
 
@@ -2422,8 +2418,6 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 	{
 		/* ENTER CRITICAL REGION (set the kernel lock) */
 		spin_lock(sem_lock);
-
-		printk(KERN_WARNING "    semaphore value         (current) %d\n", sem->value);
 
 		sem->value++;
 		if (sem->value <= 0) {						// DEQUEUE a process to run (FiFo)
@@ -2446,8 +2440,6 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 			
 			kfree(node);							// clean-up/free this node. it has been dequeued and woke-up.
 		}
-
-		printk(KERN_WARNING "    semaphore value (after decrement) %d\n", sem->value);
 
 		/* EXIT CRITICAL REGION (release the kernel lock) */
 		spin_unlock(sem_lock);
