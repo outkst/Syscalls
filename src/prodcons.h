@@ -10,8 +10,6 @@
 #include <asm/errno.h>
 #include <asm/unistd.h>
 #include <asm/mman.h>
-// #include <linux/spinlock_types.h>		/* spinlock_t */
-// #include <linux/sched.h>				/* task_struct (line937-1198) */
 
 /* 
 	Custom linked-list implementation to hold list of processes
