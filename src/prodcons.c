@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	// get the user input for Producers Consumers Resources
 	if (argc != 4) {
-		printf("Please provide correct parameters: \n\n\t./prodcons [numprods] [numcons] [numresources]");
+		printf("Please provide correct parameters: \n\n\t./prodcons [numprods] [numcons] [numresources]\n");
 		exit(1);
 
 	} else {
