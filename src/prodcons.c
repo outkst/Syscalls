@@ -13,45 +13,6 @@
 #include <string.h>
 #include <time.h>
 
-/*
-	Avoid having unwanted forks
-	when you call fork, it starts where the PC left off.
-	might end up have double or triple processes
-	come up with idea to store PID of each and check against new forked program
-		if its a newer process, then
-
-	PID for parent process 
-	if forked from parent, your PID inside is ZERO but parent holds parent
-	- store PID in parent process
-	- child, access the shared memory to get the PID
-
-
-	syscalls.h
-	#include <linux/prodcons
-	struct cs1550_sem
-	asmlinkage long sys_call
-
-
-	Implmement the IPC part of Mohammeds code
-	Otherwise, can test everything except IPC on thoth
-		logic for fork
-		logic for consumer
-
-	The queue should be of type TASK_STRUCT
-		can be array or linked list, doesn't matter
-
-	down(sem s) {
-		s.value -=1;
-		if (value < 0) {
-			//add this process to s.queue
-			s.enqueue(currentProcess);
-			sleep();
-		}
-	}
-
-	up
-*/
-
 void *MEM_BASE_PTR;
 void *MEM_EMPTY;
 void *MEM_FULL;
@@ -130,27 +91,21 @@ int main(int argc, char *argv[])
 
 	sem_empty->value = size_buffer;		// value is equal to max resources (size of buffer)
 	sem_full->value = 0;				// no item is considered full in the beginning
-	sem_mutex->value = 1;				// mutex set to 1 so that one process can successfully run. rest are queued.
+	sem_mutex->value = 1;				// mutex set to '1' so that one process can successfully run. rest are queued.
 
 	/* Create X number of producers */
 	int i, j;
 	i = 0;
 	j = 0;
-	printf("\nENTERING PRODUCER FORK LOOP\n---------------------------\n");
 	for (i=0; i<num_prods; i++) {
-
 		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			printf("forked producer child #%d\n", i);
 			producer();								// use method w/infinite loop (no return)
 		}
 	}
 
 	/* Create X number of consumers */
-	printf("\nENTERING CONSUMER FORK LOOP\n---------------------------\n");
 	for (j=0; j<num_cons; j++) {
-
 		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			printf("forked producer child #%d\n", j);
 			consumer();								// use method w/infinite loop (no return)
 		}
 	}
@@ -175,7 +130,7 @@ void producer() {
 		MEM_BUF[in] = in;					// store resource number to show that something has been produced
 		in = (in+1) % resources;			// increment to next resource (with wrapping to beginning)
 
-		printf("CHEF PRODUCED PANCAKE #%d\n", in);
+		printf("CHEF PRODUCED PANCAKE #%d\n", in);	// DEBUG
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
 
@@ -195,10 +150,10 @@ void consumer() {
 		cs1550_down(sem_mutex);				// LOCK
 
 		citem = MEM_BUF[out];				// get the resource out
-		MEM_BUF[out] = -1;					// Show that this has been consumed
-		printf("item at position %d is %d\n", out, citem);
+		//MEM_BUF[out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
 		out = (out+1) % resources;			// increment to next resource (with wrapping to beginning)
-		printf("CUSTOMER ATE PANCAKE #%d\n", out);
+
+		printf("CUSTOMER ATE PANCAKE #%d\n", out);	// (DEBUG)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
