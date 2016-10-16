@@ -21,8 +21,8 @@ int *MEM_CUR_PROD;
 int *MEM_CUR_CON;
 int *MEM_BUF;
 
-int in;
-int out;
+int *in;
+int *out;
 int resources;
 struct cs1550_sem *sem_empty;
 struct cs1550_sem *sem_full;
@@ -33,7 +33,6 @@ void cs1550_up(struct cs1550_sem *sem);
 void cs1550_down(struct cs1550_sem *sem);
 void print_stuff(int value, int *MEM_BASE_PTR, int *curr_ptr, int *new_ptr);
 void producer();
-
 
 /* 
 	argc 	holds number of arguments
@@ -85,9 +84,9 @@ int main(int argc, char *argv[])
 	sem_full = (struct cs1550_sem *) MEM_FULL;		// make MEM_FULL reference into cs1550_sem reference
 	sem_mutex = (struct cs1550_sem *) MEM_MUTEX;	// make MEM_MUTEX reference into cs1550_sem reference
 
-	in = *((int*)MEM_CUR_PROD);			// make MEM_CUR_PROD reference into (int) reference
-	out = *((int*)MEM_CUR_CON);			// make MEM_CUR_CON reference into (int) reference
-	resources = size_buffer;			// global shared resources equal to user-input buffer size
+	in = MEM_CUR_PROD;				// make MEM_CUR_PROD reference into (int) reference
+	out = MEM_CUR_CON;				// make MEM_CUR_CON reference into (int) reference
+	resources = size_buffer;		// global shared resources equal to user-input buffer size
 
 	sem_empty->value = size_buffer;		// value is equal to max resources (size of buffer)
 	sem_full->value = 0;				// no item is considered full in the beginning
@@ -127,11 +126,9 @@ void producer() {
 		/* ENTER CRITICAL REGION */
 		cs1550_down(sem_mutex);				// LOCK
 
-		MEM_BUF[in] = in;					// store resource number to show that something has been produced
-		printf("CHEF PRODUCED PANCAKE #%d\n", in);	// (DEBUG)
-		in = (in+1) % resources;			// increment to next resource (with wrapping to beginning)
-
-		
+		MEM_BUF[*in] = *in;					// store resource number to show that something has been produced
+		printf("CHEF PRODUCED PANCAKE #%d\n", *in);	// (DEBUG)
+		*in = ((*in)+1) % resources;		// increment to next resource (with wrapping to beginning)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
@@ -151,12 +148,10 @@ void consumer() {
 		/* ENTER CRITICAL REGION */
 		cs1550_down(sem_mutex);				// LOCK
 
-		citem = MEM_BUF[out];				// get the resource out
+		citem = MEM_BUF[*out];				// get the resource out
 		//MEM_BUF[out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
-		printf("CUSTOMER ATE PANCAKE #%d\n", out);	// (DEBUG)
-		out = (out+1) % resources;			// increment to next resource (with wrapping to beginning)
-
-		
+		printf("CUSTOMER ATE PANCAKE #%d\n", *out);	// (DEBUG)
+		*out = ((*out)+1) % resources;		// increment to next resource (with wrapping to beginning)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
