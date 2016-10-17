@@ -19,7 +19,9 @@ To properly implement this pseudoparallelism, three semaphores will be used:
 Queueing processes is performed using the custom `proc_node` linked-list struct, outlined in `prodcons.h`. 
 The semaphore will hold a reference to the HEAD and TAIL of this linked-list, and perform First-In-First-Out 
 (FIFO) operations by enqueueing into the TAIL, and dequeueing from the HEAD. A semaphore's `value` property
-will reflect there exists items in the queue whenever `value < 0'.
+will reflect there exists items in the queue whenever `value < 0`.
+
+This implementation uses the kernel-defined `spin_lock` structure to achieve atomicity. It is defined as "_a low-level, mutual-exclusion synchronization primitive that spins while it waits to acquire a lock_".
 
 ##SEMAPHORE WITH BLOCKING (JAVA Pseudocode)
 ```
@@ -45,4 +47,3 @@ class Semaphore {
     }
 }
 ```
-Atomicity is achieved using spin locks
