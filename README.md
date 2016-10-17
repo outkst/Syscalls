@@ -29,19 +29,18 @@ class Semaphore {
     int value;
     ProcessList pl;
 
-    void down() {
+    void down(Process P) {
         value -= 1;
         if (value < 0) {                    // add this process to process list
-            pl.enqueue(currentProcess);
+            pl.enqueue(P);
             Sleep();                        // Put this process/thread to sleep
         }
     }
 
     void up() {
-        Process P;
         value +=1;
         if (value <= 0) {                   // remove a process P from the process list
-            P = pl.dequeue();
+            Process P = pl.dequeue();
             Wakeup(P);                      // allow process/thread P that was sleeping/waiting to run
         }
     }
