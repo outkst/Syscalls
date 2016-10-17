@@ -2,6 +2,8 @@
  *  linux/kernel/sys.c
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
+ * 
+ * LINE 2362: START OF CUSTOM PROD/CON UP() AND DOWN() MUTEX IMPLEMENTATION
  */
 
 #include <linux/module.h>
@@ -2357,7 +2359,7 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		return ret;
 	}
 
-/* CREATE CUSTOM PROD/CON UP AND DOWN SEMAPHORE IMPLEMENTATION */
+/* CREATE CUSTOM PROD/CON UP AND DOWN SEMAPHORE MUTEX IMPLEMENTATION */
 	DEFINE_SPINLOCK(sem_lock);	
 
 	/*
@@ -2377,28 +2379,28 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		spin_lock(sem_lock);
 
 		sem->value--;
-		if (sem->value < 0) {						// ENQUEUE the current process
+		if (sem->value < 0) {				// ENQUEUE the current process
 			/* create a new task node to enqueue */
 			struct proc_node *node = (struct proc_node *) kmalloc(sizeof(struct proc_node), GFP_KERNEL);
 
-			node->process = current;				// global 'CURRENT' holds current process (task_struct)
-			node->next = NULL;						// new nodes will never reference anything
+			node->process = current;		// global 'CURRENT' holds current process (task_struct)
+			node->next = NULL;			// new nodes will never reference anything
 
 			if (sem->head == NULL) {
-				sem->head = node;					// insert node at head (enqueue) b/c queue is empty
+				sem->head = node;		// insert node at head (enqueue) b/c queue is empty
 			} else {
-				sem->tail->next = node;				// insert node after tail (enqueue)
+				sem->tail->next = node;		// insert node after tail (enqueue)
 			}
-			sem->tail = node;						// this node becomes the new tail
+			sem->tail = node;			// this node becomes the new tail
 
 			set_current_state(TASK_INTERRUPTIBLE);	// allow immediate interrupt (aka SLEEP)
-			spin_unlock(sem_lock);					// release lock now to avoid deadlock
-			schedule();								// tell OS to schedule another process (CONTEXT-SWITCH)
+			spin_unlock(sem_lock);			// release lock now to avoid deadlock
+			schedule();				// tell OS to schedule another process (CONTEXT-SWITCH)
 		}
 
-		/* EXIT CRITICAL REGION (release the kernel lock) */
 		spin_unlock(sem_lock);
-
+		/* EXIT CRITICAL REGION (release the kernel lock) */
+		
 		return 0;
 	}
 
@@ -2420,30 +2422,30 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
 		spin_lock(sem_lock);
 
 		sem->value++;
-		if (sem->value <= 0) {						// DEQUEUE a process to run (FiFo)
+		if (sem->value <= 0) {				// DEQUEUE a process to run (FiFo)
 			/* find process to dequeue (if any) */
 
-			struct proc_node *node = sem->head;		// get the head of the process queue/list
-			struct task_struct *proc;				// will hold the dequeued process
+			struct proc_node *node = sem->head;	// get the head of the process queue/list
+			struct task_struct *proc;		// will hold the dequeued process
 			if (node != NULL) {						
-				proc = node->process;				// get first-in node (dequeue)
+				proc = node->process;		// get first-in node (dequeue)
 
 				if (node != sem->tail) {
-					sem->head = node->next;			// head moved to the next node. old head will be freed.
+					sem->head = node->next;	// head moved to the next node. old head will be freed.
 				} else {
-					sem->head = NULL;				// we have dequeued all nodes; purge.
-					sem->tail = NULL;				// we have dequeued all nodes; purge.
+					sem->head = NULL;	// we have dequeued all nodes; purge.
+					sem->tail = NULL;	// we have dequeued all nodes; purge.
 				}
 
-				wake_up_process(proc);				// wake-up this dequeued process
+				wake_up_process(proc);		// wake-up this dequeued process
 			}
 			
-			kfree(node);							// clean-up/free this node. it has been dequeued and woke-up.
+			kfree(node);				// clean-up/free this node. it has been dequeued and woke-up.
 		}
 
-		/* EXIT CRITICAL REGION (release the kernel lock) */
 		spin_unlock(sem_lock);
-
+		/* EXIT CRITICAL REGION (release the kernel lock) */
+		
 		return 0;
 	}
 /* END */
