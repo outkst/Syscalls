@@ -9,7 +9,7 @@
  */
 #include <linux/prodcons.h>		/* custom UP() and DOWN() syscalls */
 #include <stdio.h>
-#include <stdlib.h>				/* atoi() */
+#include <stdlib.h>			/* atoi() */
 #include <string.h>
 #include <time.h>
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	/* 
 		Begin by creating a SHARED Read/Write memory map to be used across fork()'s.
 
-		3x semaphores	(empty, full, and mutex)
+		3x semaphores		(empty, full, and mutex)
 		2x ints			(current producer place, current consumer place)
 		1x buffer		(the number of (int) resources)
 	*/
@@ -73,39 +73,39 @@ int main(int argc, char *argv[])
 
 	/* Good to go, initialize pointers to this newly mapped, shared space */
 	int sem_size = sizeof(struct cs1550_sem);	// get the size of a semaphore struct
-	MEM_EMPTY = MEM_BASE_PTR;					// EMPTY sem at first location of mapped memory
-	MEM_FULL = MEM_BASE_PTR + sem_size;			// FULL sem at second location of mapped memory
-	MEM_MUTEX = MEM_FULL + sem_size;			// MUTEX sem at third location of mapped memory
+	MEM_EMPTY = MEM_BASE_PTR;			// EMPTY sem at first location of mapped memory
+	MEM_FULL = MEM_BASE_PTR + sem_size;		// FULL sem at second location of mapped memory
+	MEM_MUTEX = MEM_FULL + sem_size;		// MUTEX sem at third location of mapped memory
 	MEM_CUR_PROD = MEM_MUTEX + sem_size;		// CURRENT PRODUCER resource number
 	MEM_CUR_CON = MEM_CUR_PROD + sizeof(int);	// CURRENT CONSUMER resource number
-	MEM_BUF = MEM_MUTEX + sem_size;				// BUFFER at sixth (final) location of mapped memory
+	MEM_BUF = MEM_MUTEX + sem_size;			// BUFFER at sixth (final) location of mapped memory
 
 	sem_empty = (struct cs1550_sem *) MEM_EMPTY;	// make MEM_EMPTY reference into cs1550_sem reference
-	sem_full = (struct cs1550_sem *) MEM_FULL;		// make MEM_FULL reference into cs1550_sem reference
+	sem_full = (struct cs1550_sem *) MEM_FULL;	// make MEM_FULL reference into cs1550_sem reference
 	sem_mutex = (struct cs1550_sem *) MEM_MUTEX;	// make MEM_MUTEX reference into cs1550_sem reference
 
-	in = MEM_CUR_PROD;				// make MEM_CUR_PROD reference into (int) reference
-	out = MEM_CUR_CON;				// make MEM_CUR_CON reference into (int) reference
+	in = MEM_CUR_PROD;			// make MEM_CUR_PROD reference into (int) reference
+	out = MEM_CUR_CON;			// make MEM_CUR_CON reference into (int) reference
 	resources = size_buffer;		// global shared resources equal to user-input buffer size
 
 	sem_empty->value = size_buffer;		// value is equal to max resources (size of buffer)
-	sem_full->value = 0;				// no item is considered full in the beginning
-	sem_mutex->value = 1;				// mutex set to '1' so that one process can successfully run. rest are queued.
+	sem_full->value = 0;			// no item is considered full in the beginning
+	sem_mutex->value = 1;			// mutex set to '1' so that one process can successfully run. rest are queued.
 
 	/* Create X number of producers */
 	int i, j;
 	i = 0;
 	j = 0;
 	for (i=0; i<num_prods; i++) {
-		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			producer();								// use method w/infinite loop (no return)
+		if (fork() == 0) {		// 0 means its a child process, not parent (good!)
+			producer();		// use method w/infinite loop (no return)
 		}
 	}
 
 	/* Create X number of consumers */
 	for (j=0; j<num_cons; j++) {
-		if (fork() == 0) {							// 0 means its a child process, not parent (good!)
-			consumer();								// use method w/infinite loop (no return)
+		if (fork() == 0) {		// 0 means its a child process, not parent (good!)
+			consumer();		// use method w/infinite loop (no return)
 		}
 	}
 
@@ -126,9 +126,9 @@ void producer() {
 		/* ENTER CRITICAL REGION */
 		cs1550_down(sem_mutex);				// LOCK
 
-		MEM_BUF[*in] = *in;					// store resource number to show that something has been produced
+		MEM_BUF[*in] = *in;				// store resource number to show that something has been produced
 		printf("CHEF PRODUCED PANCAKE #%d\n", *in);	// (DEBUG)
-		*in = ((*in)+1) % resources;		// increment to next resource (with wrapping to beginning)
+		*in = ((*in)+1) % resources;			// increment to next resource (with wrapping to beginning)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
@@ -151,7 +151,7 @@ void consumer() {
 		citem = MEM_BUF[*out];				// get the resource out
 		//MEM_BUF[out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
 		printf("CUSTOMER ATE PANCAKE #%d\n", *out);	// (DEBUG)
-		*out = ((*out)+1) % resources;		// increment to next resource (with wrapping to beginning)
+		*out = ((*out)+1) % resources;			// increment to next resource (with wrapping to beginning)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
