@@ -28,11 +28,10 @@ struct cs1550_sem *sem_empty;
 struct cs1550_sem *sem_full;
 struct cs1550_sem *sem_mutex;
 
-void consumer();
+void consumer(int fork_num);
+void producer(int fork_num);
 void cs1550_up(struct cs1550_sem *sem);
 void cs1550_down(struct cs1550_sem *sem);
-void print_stuff(int value, int *MEM_BASE_PTR, int *curr_ptr, int *new_ptr);
-void producer();
 
 /* 
 	argc 	holds number of arguments
@@ -90,7 +89,7 @@ int main(int argc, char *argv[])
 
 	sem_empty->value = size_buffer;		// value is equal to max resources (size of buffer)
 	sem_full->value = 0;			// no item is considered full in the beginning
-	sem_mutex->value = 1;			// mutex set to '1' so that one process can successfully run. rest are queued.
+	sem_mutex->value = 1;			// mutex set to '1' so that one process can successfully run. the rest are queued.
 
 	/* Create X number of producers */
 	int i, j;
@@ -98,14 +97,14 @@ int main(int argc, char *argv[])
 	j = 0;
 	for (i=0; i<num_prods; i++) {
 		if (fork() == 0) {		// 0 means its a child process, not parent (good!)
-			producer();		// use method w/infinite loop (no return)
+			producer(i);		// use method w/infinite loop (no return)
 		}
 	}
 
 	/* Create X number of consumers */
 	for (j=0; j<num_cons; j++) {
 		if (fork() == 0) {		// 0 means its a child process, not parent (good!)
-			consumer();		// use method w/infinite loop (no return)
+			consumer(j);		// use method w/infinite loop (no return)
 		}
 	}
 
@@ -117,7 +116,7 @@ int main(int argc, char *argv[])
 }
 
 /* Make those marfkin pancakes */
-void producer() {
+void producer(int fork_num) {
 
 	/* produce items into the buffer */
 	while (1) {
@@ -127,9 +126,10 @@ void producer() {
 		cs1550_down(sem_mutex);				// LOCK
 
 		MEM_BUF[*in] = *in;				// store resource number to show that something has been produced
-		printf("CHEF PRODUCED PANCAKE #%d\n", *in);	// (DEBUG)
 		*in = ((*in)+1) % resources;			// increment to next resource (with wrapping to beginning)
 
+		printf("CHEF #%d PRODUCED PANCAKE #%d\n", fork_num, *in);	// (DEBUG)
+		
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
 
@@ -138,7 +138,7 @@ void producer() {
 }
 
 /* Eat those delicious marfkin pancakes */
-void consumer() {
+void consumer(int fork_num) {
 	int citem;
 
 	/* consume items from the buffer */
@@ -150,8 +150,9 @@ void consumer() {
 
 		citem = MEM_BUF[*out];				// get the resource out
 		//MEM_BUF[out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
-		printf("CUSTOMER ATE PANCAKE #%d\n", *out);	// (DEBUG)
 		*out = ((*out)+1) % resources;			// increment to next resource (with wrapping to beginning)
+
+		printf("CUSTOMER #%d ATE PANCAKE #%d\n", fork_num, *out);	// (DEBUG)
 
 		cs1550_up(sem_mutex);				// UNLOCK
 		/* EXIT CRITICAL REGION */
