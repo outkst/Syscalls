@@ -149,7 +149,7 @@ void consumer(int fork_num) {
 		cs1550_down(sem_mutex);				// LOCK
 
 		citem = MEM_BUF[*out];				// get the resource out
-		//MEM_BUF[out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
+		//MEM_BUF[*out] = -1;				// (DEBUG) Show that this has been consumed by inserting '-1'
 		*out = ((*out)+1) % resources;			// increment to next resource (with wrapping to beginning)
 
 		printf("CUSTOMER #%d ATE PANCAKE #%d\n", fork_num, *out);	// (DEBUG)
