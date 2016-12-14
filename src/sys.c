@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
  * 
- * LINE 2362: START OF CUSTOM PROD/CON UP() AND DOWN() MUTEX IMPLEMENTATION
+ *  !!! LINE 2362: START OF CUSTOM PROD/CON UP() AND DOWN() MUTEX IMPLEMENTATION !!!
  */
 
 #include <linux/module.h>
@@ -46,28 +46,28 @@
 #include <asm/unistd.h>
 
 #ifndef SET_UNALIGN_CTL
-# define SET_UNALIGN_CTL(a,b)	(-EINVAL)
+# define SET_UNALIGN_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef GET_UNALIGN_CTL
-# define GET_UNALIGN_CTL(a,b)	(-EINVAL)
+# define GET_UNALIGN_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef SET_FPEMU_CTL
-# define SET_FPEMU_CTL(a,b)	(-EINVAL)
+# define SET_FPEMU_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef GET_FPEMU_CTL
-# define GET_FPEMU_CTL(a,b)	(-EINVAL)
+# define GET_FPEMU_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef SET_FPEXC_CTL
-# define SET_FPEXC_CTL(a,b)	(-EINVAL)
+# define SET_FPEXC_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef GET_FPEXC_CTL
-# define GET_FPEXC_CTL(a,b)	(-EINVAL)
+# define GET_FPEXC_CTL(a,b)    (-EINVAL)
 #endif
 #ifndef GET_ENDIAN
-# define GET_ENDIAN(a,b)	(-EINVAL)
+# define GET_ENDIAN(a,b)    (-EINVAL)
 #endif
 #ifndef SET_ENDIAN
-# define SET_ENDIAN(a,b)	(-EINVAL)
+# define SET_ENDIAN(a,b)    (-EINVAL)
 #endif
 
 /*
@@ -110,556 +110,556 @@ void (*pm_power_off_prepare)(void);
 EXPORT_SYMBOL(pm_power_off_prepare);
 
 /*
- *	Notifier list for kernel code which wants to be called
- *	at shutdown. This is used to stop any idling DMA operations
- *	and the like. 
+ *    Notifier list for kernel code which wants to be called
+ *    at shutdown. This is used to stop any idling DMA operations
+ *    and the like. 
  */
 
 static BLOCKING_NOTIFIER_HEAD(reboot_notifier_list);
 
 /*
- *	Notifier chain core routines.  The exported routines below
- *	are layered on top of these, with appropriate locking added.
+ *    Notifier chain core routines.  The exported routines below
+ *    are layered on top of these, with appropriate locking added.
  */
 
 static int notifier_chain_register(struct notifier_block **nl,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	while ((*nl) != NULL) {
-		if (n->priority > (*nl)->priority)
-			break;
-		nl = &((*nl)->next);
-	}
-	n->next = *nl;
-	rcu_assign_pointer(*nl, n);
-	return 0;
+    while ((*nl) != NULL) {
+        if (n->priority > (*nl)->priority)
+            break;
+        nl = &((*nl)->next);
+    }
+    n->next = *nl;
+    rcu_assign_pointer(*nl, n);
+    return 0;
 }
 
 static int notifier_chain_unregister(struct notifier_block **nl,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	while ((*nl) != NULL) {
-		if ((*nl) == n) {
-			rcu_assign_pointer(*nl, n->next);
-			return 0;
-		}
-		nl = &((*nl)->next);
-	}
-	return -ENOENT;
+    while ((*nl) != NULL) {
+        if ((*nl) == n) {
+            rcu_assign_pointer(*nl, n->next);
+            return 0;
+        }
+        nl = &((*nl)->next);
+    }
+    return -ENOENT;
 }
 
 /**
  * notifier_call_chain - Informs the registered notifiers about an event.
- *	@nl:		Pointer to head of the blocking notifier chain
- *	@val:		Value passed unmodified to notifier function
- *	@v:		Pointer passed unmodified to notifier function
- *	@nr_to_call:	Number of notifier functions to be called. Don't care
- *		     	value of this parameter is -1.
- *	@nr_calls:	Records the number of notifications sent. Don't care
- *		   	value of this field is NULL.
- * 	@returns:	notifier_call_chain returns the value returned by the
- *			last notifier function called.
+ *    @nl:        Pointer to head of the blocking notifier chain
+ *    @val:        Value passed unmodified to notifier function
+ *    @v:        Pointer passed unmodified to notifier function
+ *    @nr_to_call:    Number of notifier functions to be called. Don't care
+ *                 value of this parameter is -1.
+ *    @nr_calls:    Records the number of notifications sent. Don't care
+ *               value of this field is NULL.
+ *     @returns:    notifier_call_chain returns the value returned by the
+ *            last notifier function called.
  */
 
 static int __kprobes notifier_call_chain(struct notifier_block **nl,
-	unsigned long val, void *v,
-	int nr_to_call,	int *nr_calls)
+    unsigned long val, void *v,
+    int nr_to_call,    int *nr_calls)
 {
-	int ret = NOTIFY_DONE;
-	struct notifier_block *nb, *next_nb;
+    int ret = NOTIFY_DONE;
+    struct notifier_block *nb, *next_nb;
 
-	nb = rcu_dereference(*nl);
+    nb = rcu_dereference(*nl);
 
-	while (nb && nr_to_call) {
-		next_nb = rcu_dereference(nb->next);
-		ret = nb->notifier_call(nb, val, v);
+    while (nb && nr_to_call) {
+        next_nb = rcu_dereference(nb->next);
+        ret = nb->notifier_call(nb, val, v);
 
-		if (nr_calls)
-			(*nr_calls)++;
+        if (nr_calls)
+            (*nr_calls)++;
 
-		if ((ret & NOTIFY_STOP_MASK) == NOTIFY_STOP_MASK)
-			break;
-		nb = next_nb;
-		nr_to_call--;
-	}
-	return ret;
+        if ((ret & NOTIFY_STOP_MASK) == NOTIFY_STOP_MASK)
+            break;
+        nb = next_nb;
+        nr_to_call--;
+    }
+    return ret;
 }
 
 /*
- *	Atomic notifier chain routines.  Registration and unregistration
- *	use a spinlock, and call_chain is synchronized by RCU (no locks).
+ *    Atomic notifier chain routines.  Registration and unregistration
+ *    use a spinlock, and call_chain is synchronized by RCU (no locks).
  */
 
 /**
- *	atomic_notifier_chain_register - Add notifier to an atomic notifier chain
- *	@nh: Pointer to head of the atomic notifier chain
- *	@n: New entry in notifier chain
+ *    atomic_notifier_chain_register - Add notifier to an atomic notifier chain
+ *    @nh: Pointer to head of the atomic notifier chain
+ *    @n: New entry in notifier chain
  *
- *	Adds a notifier to an atomic notifier chain.
+ *    Adds a notifier to an atomic notifier chain.
  *
- *	Currently always returns zero.
+ *    Currently always returns zero.
  */
 
 int atomic_notifier_chain_register(struct atomic_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	unsigned long flags;
-	int ret;
+    unsigned long flags;
+    int ret;
 
-	spin_lock_irqsave(&nh->lock, flags);
-	ret = notifier_chain_register(&nh->head, n);
-	spin_unlock_irqrestore(&nh->lock, flags);
-	return ret;
+    spin_lock_irqsave(&nh->lock, flags);
+    ret = notifier_chain_register(&nh->head, n);
+    spin_unlock_irqrestore(&nh->lock, flags);
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(atomic_notifier_chain_register);
 
 /**
- *	atomic_notifier_chain_unregister - Remove notifier from an atomic notifier chain
- *	@nh: Pointer to head of the atomic notifier chain
- *	@n: Entry to remove from notifier chain
+ *    atomic_notifier_chain_unregister - Remove notifier from an atomic notifier chain
+ *    @nh: Pointer to head of the atomic notifier chain
+ *    @n: Entry to remove from notifier chain
  *
- *	Removes a notifier from an atomic notifier chain.
+ *    Removes a notifier from an atomic notifier chain.
  *
- *	Returns zero on success or %-ENOENT on failure.
+ *    Returns zero on success or %-ENOENT on failure.
  */
 int atomic_notifier_chain_unregister(struct atomic_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	unsigned long flags;
-	int ret;
+    unsigned long flags;
+    int ret;
 
-	spin_lock_irqsave(&nh->lock, flags);
-	ret = notifier_chain_unregister(&nh->head, n);
-	spin_unlock_irqrestore(&nh->lock, flags);
-	synchronize_rcu();
-	return ret;
+    spin_lock_irqsave(&nh->lock, flags);
+    ret = notifier_chain_unregister(&nh->head, n);
+    spin_unlock_irqrestore(&nh->lock, flags);
+    synchronize_rcu();
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
 
 /**
- *	__atomic_notifier_call_chain - Call functions in an atomic notifier chain
- *	@nh: Pointer to head of the atomic notifier chain
- *	@val: Value passed unmodified to notifier function
- *	@v: Pointer passed unmodified to notifier function
- *	@nr_to_call: See the comment for notifier_call_chain.
- *	@nr_calls: See the comment for notifier_call_chain.
+ *    __atomic_notifier_call_chain - Call functions in an atomic notifier chain
+ *    @nh: Pointer to head of the atomic notifier chain
+ *    @val: Value passed unmodified to notifier function
+ *    @v: Pointer passed unmodified to notifier function
+ *    @nr_to_call: See the comment for notifier_call_chain.
+ *    @nr_calls: See the comment for notifier_call_chain.
  *
- *	Calls each function in a notifier chain in turn.  The functions
- *	run in an atomic context, so they must not block.
- *	This routine uses RCU to synchronize with changes to the chain.
+ *    Calls each function in a notifier chain in turn.  The functions
+ *    run in an atomic context, so they must not block.
+ *    This routine uses RCU to synchronize with changes to the chain.
  *
- *	If the return value of the notifier can be and'ed
- *	with %NOTIFY_STOP_MASK then atomic_notifier_call_chain()
- *	will return immediately, with the return value of
- *	the notifier function which halted execution.
- *	Otherwise the return value is the return value
- *	of the last notifier function called.
+ *    If the return value of the notifier can be and'ed
+ *    with %NOTIFY_STOP_MASK then atomic_notifier_call_chain()
+ *    will return immediately, with the return value of
+ *    the notifier function which halted execution.
+ *    Otherwise the return value is the return value
+ *    of the last notifier function called.
  */
 
 int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-	unsigned long val, void *v,
-	int nr_to_call, int *nr_calls)
+    unsigned long val, void *v,
+    int nr_to_call, int *nr_calls)
 {
-	int ret;
+    int ret;
 
-	rcu_read_lock();
-	ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
-	rcu_read_unlock();
-	return ret;
+    rcu_read_lock();
+    ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+    rcu_read_unlock();
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
 
 int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-	unsigned long val, void *v)
+    unsigned long val, void *v)
 {
-	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
+    return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
 }
 
 EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
 /*
- *	Blocking notifier chain routines.  All access to the chain is
- *	synchronized by an rwsem.
+ *    Blocking notifier chain routines.  All access to the chain is
+ *    synchronized by an rwsem.
  */
 
 /**
- *	blocking_notifier_chain_register - Add notifier to a blocking notifier chain
- *	@nh: Pointer to head of the blocking notifier chain
- *	@n: New entry in notifier chain
+ *    blocking_notifier_chain_register - Add notifier to a blocking notifier chain
+ *    @nh: Pointer to head of the blocking notifier chain
+ *    @n: New entry in notifier chain
  *
- *	Adds a notifier to a blocking notifier chain.
- *	Must be called in process context.
+ *    Adds a notifier to a blocking notifier chain.
+ *    Must be called in process context.
  *
- *	Currently always returns zero.
+ *    Currently always returns zero.
  */
 
 int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	int ret;
+    int ret;
 
-	/*
-	 * This code gets used during boot-up, when task switching is
-	 * not yet working and interrupts must remain disabled.  At
-	 * such times we must not call down_write().
-	 */
-	if (unlikely(system_state == SYSTEM_BOOTING))
-		return notifier_chain_register(&nh->head, n);
+    /*
+     * This code gets used during boot-up, when task switching is
+     * not yet working and interrupts must remain disabled.  At
+     * such times we must not call down_write().
+     */
+    if (unlikely(system_state == SYSTEM_BOOTING))
+        return notifier_chain_register(&nh->head, n);
 
-	down_write(&nh->rwsem);
-	ret = notifier_chain_register(&nh->head, n);
-	up_write(&nh->rwsem);
-	return ret;
+    down_write(&nh->rwsem);
+    ret = notifier_chain_register(&nh->head, n);
+    up_write(&nh->rwsem);
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(blocking_notifier_chain_register);
 
 /**
- *	blocking_notifier_chain_unregister - Remove notifier from a blocking notifier chain
- *	@nh: Pointer to head of the blocking notifier chain
- *	@n: Entry to remove from notifier chain
+ *    blocking_notifier_chain_unregister - Remove notifier from a blocking notifier chain
+ *    @nh: Pointer to head of the blocking notifier chain
+ *    @n: Entry to remove from notifier chain
  *
- *	Removes a notifier from a blocking notifier chain.
- *	Must be called from process context.
+ *    Removes a notifier from a blocking notifier chain.
+ *    Must be called from process context.
  *
- *	Returns zero on success or %-ENOENT on failure.
+ *    Returns zero on success or %-ENOENT on failure.
  */
 int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	int ret;
+    int ret;
 
-	/*
-	 * This code gets used during boot-up, when task switching is
-	 * not yet working and interrupts must remain disabled.  At
-	 * such times we must not call down_write().
-	 */
-	if (unlikely(system_state == SYSTEM_BOOTING))
-		return notifier_chain_unregister(&nh->head, n);
+    /*
+     * This code gets used during boot-up, when task switching is
+     * not yet working and interrupts must remain disabled.  At
+     * such times we must not call down_write().
+     */
+    if (unlikely(system_state == SYSTEM_BOOTING))
+        return notifier_chain_unregister(&nh->head, n);
 
-	down_write(&nh->rwsem);
-	ret = notifier_chain_unregister(&nh->head, n);
-	up_write(&nh->rwsem);
-	return ret;
+    down_write(&nh->rwsem);
+    ret = notifier_chain_unregister(&nh->head, n);
+    up_write(&nh->rwsem);
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(blocking_notifier_chain_unregister);
 
 /**
- *	__blocking_notifier_call_chain - Call functions in a blocking notifier chain
- *	@nh: Pointer to head of the blocking notifier chain
- *	@val: Value passed unmodified to notifier function
- *	@v: Pointer passed unmodified to notifier function
- *	@nr_to_call: See comment for notifier_call_chain.
- *	@nr_calls: See comment for notifier_call_chain.
+ *    __blocking_notifier_call_chain - Call functions in a blocking notifier chain
+ *    @nh: Pointer to head of the blocking notifier chain
+ *    @val: Value passed unmodified to notifier function
+ *    @v: Pointer passed unmodified to notifier function
+ *    @nr_to_call: See comment for notifier_call_chain.
+ *    @nr_calls: See comment for notifier_call_chain.
  *
- *	Calls each function in a notifier chain in turn.  The functions
- *	run in a process context, so they are allowed to block.
+ *    Calls each function in a notifier chain in turn.  The functions
+ *    run in a process context, so they are allowed to block.
  *
- *	If the return value of the notifier can be and'ed
- *	with %NOTIFY_STOP_MASK then blocking_notifier_call_chain()
- *	will return immediately, with the return value of
- *	the notifier function which halted execution.
- *	Otherwise the return value is the return value
- *	of the last notifier function called.
+ *    If the return value of the notifier can be and'ed
+ *    with %NOTIFY_STOP_MASK then blocking_notifier_call_chain()
+ *    will return immediately, with the return value of
+ *    the notifier function which halted execution.
+ *    Otherwise the return value is the return value
+ *    of the last notifier function called.
  */
 
 int __blocking_notifier_call_chain(struct blocking_notifier_head *nh,
-	unsigned long val, void *v,
-	int nr_to_call, int *nr_calls)
+    unsigned long val, void *v,
+    int nr_to_call, int *nr_calls)
 {
-	int ret = NOTIFY_DONE;
+    int ret = NOTIFY_DONE;
 
-	/*
-	 * We check the head outside the lock, but if this access is
-	 * racy then it does not matter what the result of the test
-	 * is, we re-check the list after having taken the lock anyway:
-	 */
-	if (rcu_dereference(nh->head)) {
-		down_read(&nh->rwsem);
-		ret = notifier_call_chain(&nh->head, val, v, nr_to_call,
-			nr_calls);
-		up_read(&nh->rwsem);
-	}
-	return ret;
+    /*
+     * We check the head outside the lock, but if this access is
+     * racy then it does not matter what the result of the test
+     * is, we re-check the list after having taken the lock anyway:
+     */
+    if (rcu_dereference(nh->head)) {
+        down_read(&nh->rwsem);
+        ret = notifier_call_chain(&nh->head, val, v, nr_to_call,
+            nr_calls);
+        up_read(&nh->rwsem);
+    }
+    return ret;
 }
 EXPORT_SYMBOL_GPL(__blocking_notifier_call_chain);
 
 int blocking_notifier_call_chain(struct blocking_notifier_head *nh,
-	unsigned long val, void *v)
+    unsigned long val, void *v)
 {
-	return __blocking_notifier_call_chain(nh, val, v, -1, NULL);
+    return __blocking_notifier_call_chain(nh, val, v, -1, NULL);
 }
 EXPORT_SYMBOL_GPL(blocking_notifier_call_chain);
 
 /*
- *	Raw notifier chain routines.  There is no protection;
- *	the caller must provide it.  Use at your own risk!
+ *    Raw notifier chain routines.  There is no protection;
+ *    the caller must provide it.  Use at your own risk!
  */
 
 /**
- *	raw_notifier_chain_register - Add notifier to a raw notifier chain
- *	@nh: Pointer to head of the raw notifier chain
- *	@n: New entry in notifier chain
+ *    raw_notifier_chain_register - Add notifier to a raw notifier chain
+ *    @nh: Pointer to head of the raw notifier chain
+ *    @n: New entry in notifier chain
  *
- *	Adds a notifier to a raw notifier chain.
- *	All locking must be provided by the caller.
+ *    Adds a notifier to a raw notifier chain.
+ *    All locking must be provided by the caller.
  *
- *	Currently always returns zero.
+ *    Currently always returns zero.
  */
 
 int raw_notifier_chain_register(struct raw_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	return notifier_chain_register(&nh->head, n);
+    return notifier_chain_register(&nh->head, n);
 }
 
 EXPORT_SYMBOL_GPL(raw_notifier_chain_register);
 
 /**
- *	raw_notifier_chain_unregister - Remove notifier from a raw notifier chain
- *	@nh: Pointer to head of the raw notifier chain
- *	@n: Entry to remove from notifier chain
+ *    raw_notifier_chain_unregister - Remove notifier from a raw notifier chain
+ *    @nh: Pointer to head of the raw notifier chain
+ *    @n: Entry to remove from notifier chain
  *
- *	Removes a notifier from a raw notifier chain.
- *	All locking must be provided by the caller.
+ *    Removes a notifier from a raw notifier chain.
+ *    All locking must be provided by the caller.
  *
- *	Returns zero on success or %-ENOENT on failure.
+ *    Returns zero on success or %-ENOENT on failure.
  */
 int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	return notifier_chain_unregister(&nh->head, n);
+    return notifier_chain_unregister(&nh->head, n);
 }
 
 EXPORT_SYMBOL_GPL(raw_notifier_chain_unregister);
 
 /**
- *	__raw_notifier_call_chain - Call functions in a raw notifier chain
- *	@nh: Pointer to head of the raw notifier chain
- *	@val: Value passed unmodified to notifier function
- *	@v: Pointer passed unmodified to notifier function
- *	@nr_to_call: See comment for notifier_call_chain.
- *	@nr_calls: See comment for notifier_call_chain
+ *    __raw_notifier_call_chain - Call functions in a raw notifier chain
+ *    @nh: Pointer to head of the raw notifier chain
+ *    @val: Value passed unmodified to notifier function
+ *    @v: Pointer passed unmodified to notifier function
+ *    @nr_to_call: See comment for notifier_call_chain.
+ *    @nr_calls: See comment for notifier_call_chain
  *
- *	Calls each function in a notifier chain in turn.  The functions
- *	run in an undefined context.
- *	All locking must be provided by the caller.
+ *    Calls each function in a notifier chain in turn.  The functions
+ *    run in an undefined context.
+ *    All locking must be provided by the caller.
  *
- *	If the return value of the notifier can be and'ed
- *	with %NOTIFY_STOP_MASK then raw_notifier_call_chain()
- *	will return immediately, with the return value of
- *	the notifier function which halted execution.
- *	Otherwise the return value is the return value
- *	of the last notifier function called.
+ *    If the return value of the notifier can be and'ed
+ *    with %NOTIFY_STOP_MASK then raw_notifier_call_chain()
+ *    will return immediately, with the return value of
+ *    the notifier function which halted execution.
+ *    Otherwise the return value is the return value
+ *    of the last notifier function called.
  */
 
 int __raw_notifier_call_chain(struct raw_notifier_head *nh,
-	unsigned long val, void *v,
-	int nr_to_call, int *nr_calls)
+    unsigned long val, void *v,
+    int nr_to_call, int *nr_calls)
 {
-	return notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+    return notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
 }
 
 EXPORT_SYMBOL_GPL(__raw_notifier_call_chain);
 
 int raw_notifier_call_chain(struct raw_notifier_head *nh,
-	unsigned long val, void *v)
+    unsigned long val, void *v)
 {
-	return __raw_notifier_call_chain(nh, val, v, -1, NULL);
+    return __raw_notifier_call_chain(nh, val, v, -1, NULL);
 }
 
 EXPORT_SYMBOL_GPL(raw_notifier_call_chain);
 
 /*
- *	SRCU notifier chain routines.    Registration and unregistration
- *	use a mutex, and call_chain is synchronized by SRCU (no locks).
+ *    SRCU notifier chain routines.    Registration and unregistration
+ *    use a mutex, and call_chain is synchronized by SRCU (no locks).
  */
 
 /**
- *	srcu_notifier_chain_register - Add notifier to an SRCU notifier chain
- *	@nh: Pointer to head of the SRCU notifier chain
- *	@n: New entry in notifier chain
+ *    srcu_notifier_chain_register - Add notifier to an SRCU notifier chain
+ *    @nh: Pointer to head of the SRCU notifier chain
+ *    @n: New entry in notifier chain
  *
- *	Adds a notifier to an SRCU notifier chain.
- *	Must be called in process context.
+ *    Adds a notifier to an SRCU notifier chain.
+ *    Must be called in process context.
  *
- *	Currently always returns zero.
+ *    Currently always returns zero.
  */
 
 int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	int ret;
+    int ret;
 
-	/*
-	 * This code gets used during boot-up, when task switching is
-	 * not yet working and interrupts must remain disabled.  At
-	 * such times we must not call mutex_lock().
-	 */
-	if (unlikely(system_state == SYSTEM_BOOTING))
-		return notifier_chain_register(&nh->head, n);
+    /*
+     * This code gets used during boot-up, when task switching is
+     * not yet working and interrupts must remain disabled.  At
+     * such times we must not call mutex_lock().
+     */
+    if (unlikely(system_state == SYSTEM_BOOTING))
+        return notifier_chain_register(&nh->head, n);
 
-	mutex_lock(&nh->mutex);
-	ret = notifier_chain_register(&nh->head, n);
-	mutex_unlock(&nh->mutex);
-	return ret;
+    mutex_lock(&nh->mutex);
+    ret = notifier_chain_register(&nh->head, n);
+    mutex_unlock(&nh->mutex);
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(srcu_notifier_chain_register);
 
 /**
- *	srcu_notifier_chain_unregister - Remove notifier from an SRCU notifier chain
- *	@nh: Pointer to head of the SRCU notifier chain
- *	@n: Entry to remove from notifier chain
+ *    srcu_notifier_chain_unregister - Remove notifier from an SRCU notifier chain
+ *    @nh: Pointer to head of the SRCU notifier chain
+ *    @n: Entry to remove from notifier chain
  *
- *	Removes a notifier from an SRCU notifier chain.
- *	Must be called from process context.
+ *    Removes a notifier from an SRCU notifier chain.
+ *    Must be called from process context.
  *
- *	Returns zero on success or %-ENOENT on failure.
+ *    Returns zero on success or %-ENOENT on failure.
  */
 int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-	struct notifier_block *n)
+    struct notifier_block *n)
 {
-	int ret;
+    int ret;
 
-	/*
-	 * This code gets used during boot-up, when task switching is
-	 * not yet working and interrupts must remain disabled.  At
-	 * such times we must not call mutex_lock().
-	 */
-	if (unlikely(system_state == SYSTEM_BOOTING))
-		return notifier_chain_unregister(&nh->head, n);
+    /*
+     * This code gets used during boot-up, when task switching is
+     * not yet working and interrupts must remain disabled.  At
+     * such times we must not call mutex_lock().
+     */
+    if (unlikely(system_state == SYSTEM_BOOTING))
+        return notifier_chain_unregister(&nh->head, n);
 
-	mutex_lock(&nh->mutex);
-	ret = notifier_chain_unregister(&nh->head, n);
-	mutex_unlock(&nh->mutex);
-	synchronize_srcu(&nh->srcu);
-	return ret;
+    mutex_lock(&nh->mutex);
+    ret = notifier_chain_unregister(&nh->head, n);
+    mutex_unlock(&nh->mutex);
+    synchronize_srcu(&nh->srcu);
+    return ret;
 }
 
 EXPORT_SYMBOL_GPL(srcu_notifier_chain_unregister);
 
 /**
- *	__srcu_notifier_call_chain - Call functions in an SRCU notifier chain
- *	@nh: Pointer to head of the SRCU notifier chain
- *	@val: Value passed unmodified to notifier function
- *	@v: Pointer passed unmodified to notifier function
- *	@nr_to_call: See comment for notifier_call_chain.
- *	@nr_calls: See comment for notifier_call_chain
+ *    __srcu_notifier_call_chain - Call functions in an SRCU notifier chain
+ *    @nh: Pointer to head of the SRCU notifier chain
+ *    @val: Value passed unmodified to notifier function
+ *    @v: Pointer passed unmodified to notifier function
+ *    @nr_to_call: See comment for notifier_call_chain.
+ *    @nr_calls: See comment for notifier_call_chain
  *
- *	Calls each function in a notifier chain in turn.  The functions
- *	run in a process context, so they are allowed to block.
+ *    Calls each function in a notifier chain in turn.  The functions
+ *    run in a process context, so they are allowed to block.
  *
- *	If the return value of the notifier can be and'ed
- *	with %NOTIFY_STOP_MASK then srcu_notifier_call_chain()
- *	will return immediately, with the return value of
- *	the notifier function which halted execution.
- *	Otherwise the return value is the return value
- *	of the last notifier function called.
+ *    If the return value of the notifier can be and'ed
+ *    with %NOTIFY_STOP_MASK then srcu_notifier_call_chain()
+ *    will return immediately, with the return value of
+ *    the notifier function which halted execution.
+ *    Otherwise the return value is the return value
+ *    of the last notifier function called.
  */
 
 int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-	unsigned long val, void *v,
-	int nr_to_call, int *nr_calls)
+    unsigned long val, void *v,
+    int nr_to_call, int *nr_calls)
 {
-	int ret;
-	int idx;
+    int ret;
+    int idx;
 
-	idx = srcu_read_lock(&nh->srcu);
-	ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
-	srcu_read_unlock(&nh->srcu, idx);
-	return ret;
+    idx = srcu_read_lock(&nh->srcu);
+    ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+    srcu_read_unlock(&nh->srcu, idx);
+    return ret;
 }
 EXPORT_SYMBOL_GPL(__srcu_notifier_call_chain);
 
 int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-	unsigned long val, void *v)
+    unsigned long val, void *v)
 {
-	return __srcu_notifier_call_chain(nh, val, v, -1, NULL);
+    return __srcu_notifier_call_chain(nh, val, v, -1, NULL);
 }
 EXPORT_SYMBOL_GPL(srcu_notifier_call_chain);
 
 /**
- *	srcu_init_notifier_head - Initialize an SRCU notifier head
- *	@nh: Pointer to head of the srcu notifier chain
+ *    srcu_init_notifier_head - Initialize an SRCU notifier head
+ *    @nh: Pointer to head of the srcu notifier chain
  *
- *	Unlike other sorts of notifier heads, SRCU notifier heads require
- *	dynamic initialization.  Be sure to call this routine before
- *	calling any of the other SRCU notifier routines for this head.
+ *    Unlike other sorts of notifier heads, SRCU notifier heads require
+ *    dynamic initialization.  Be sure to call this routine before
+ *    calling any of the other SRCU notifier routines for this head.
  *
- *	If an SRCU notifier head is deallocated, it must first be cleaned
- *	up by calling srcu_cleanup_notifier_head().  Otherwise the head's
- *	per-cpu data (used by the SRCU mechanism) will leak.
+ *    If an SRCU notifier head is deallocated, it must first be cleaned
+ *    up by calling srcu_cleanup_notifier_head().  Otherwise the head's
+ *    per-cpu data (used by the SRCU mechanism) will leak.
  */
 
 void srcu_init_notifier_head(struct srcu_notifier_head *nh)
 {
-	mutex_init(&nh->mutex);
-	if (init_srcu_struct(&nh->srcu) < 0)
-		BUG();
-	nh->head = NULL;
+    mutex_init(&nh->mutex);
+    if (init_srcu_struct(&nh->srcu) < 0)
+        BUG();
+    nh->head = NULL;
 }
 
 EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
 
 /**
- *	register_reboot_notifier - Register function to be called at reboot time
- *	@nb: Info about notifier function to be called
+ *    register_reboot_notifier - Register function to be called at reboot time
+ *    @nb: Info about notifier function to be called
  *
- *	Registers a function with the list of functions
- *	to be called at reboot time.
+ *    Registers a function with the list of functions
+ *    to be called at reboot time.
  *
- *	Currently always returns zero, as blocking_notifier_chain_register()
- *	always returns zero.
+ *    Currently always returns zero, as blocking_notifier_chain_register()
+ *    always returns zero.
  */
 
 int register_reboot_notifier(struct notifier_block * nb)
 {
-	return blocking_notifier_chain_register(&reboot_notifier_list, nb);
+    return blocking_notifier_chain_register(&reboot_notifier_list, nb);
 }
 
 EXPORT_SYMBOL(register_reboot_notifier);
 
 /**
- *	unregister_reboot_notifier - Unregister previously registered reboot notifier
- *	@nb: Hook to be unregistered
+ *    unregister_reboot_notifier - Unregister previously registered reboot notifier
+ *    @nb: Hook to be unregistered
  *
- *	Unregisters a previously registered reboot
- *	notifier function.
+ *    Unregisters a previously registered reboot
+ *    notifier function.
  *
- *	Returns zero on success, or %-ENOENT on failure.
+ *    Returns zero on success, or %-ENOENT on failure.
  */
 
 int unregister_reboot_notifier(struct notifier_block * nb)
 {
-	return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
+    return blocking_notifier_chain_unregister(&reboot_notifier_list, nb);
 }
 
 EXPORT_SYMBOL(unregister_reboot_notifier);
 
 static int set_one_prio(struct task_struct *p, int niceval, int error)
 {
-	int no_nice;
+    int no_nice;
 
-	if (p->uid != current->euid &&
-		p->euid != current->euid && !capable(CAP_SYS_NICE)) {
-		error = -EPERM;
-	goto out;
+    if (p->uid != current->euid &&
+        p->euid != current->euid && !capable(CAP_SYS_NICE)) {
+        error = -EPERM;
+    goto out;
 }
 if (niceval < task_nice(p) && !can_nice(p, niceval)) {
-	error = -EACCES;
-	goto out;
+    error = -EACCES;
+    goto out;
 }
 no_nice = security_task_setnice(p, niceval);
 if (no_nice) {
-	error = no_nice;
-	goto out;
+    error = no_nice;
+    goto out;
 }
 if (error == -ESRCH)
-	error = 0;
+    error = 0;
 set_user_nice(p, niceval);
 out:
 return error;
@@ -667,61 +667,61 @@ return error;
 
 asmlinkage long sys_setpriority(int which, int who, int niceval)
 {
-	struct task_struct *g, *p;
-	struct user_struct *user;
-	int error = -EINVAL;
-	struct pid *pgrp;
+    struct task_struct *g, *p;
+    struct user_struct *user;
+    int error = -EINVAL;
+    struct pid *pgrp;
 
-	if (which > PRIO_USER || which < PRIO_PROCESS)
-		goto out;
+    if (which > PRIO_USER || which < PRIO_PROCESS)
+        goto out;
 
-	/* normalize: avoid signed division (rounding problems) */
-	error = -ESRCH;
-	if (niceval < -20)
-		niceval = -20;
-	if (niceval > 19)
-		niceval = 19;
+    /* normalize: avoid signed division (rounding problems) */
+    error = -ESRCH;
+    if (niceval < -20)
+        niceval = -20;
+    if (niceval > 19)
+        niceval = 19;
 
-	read_lock(&tasklist_lock);
-	switch (which) {
-		case PRIO_PROCESS:
-		if (who)
-			p = find_task_by_pid(who);
-		else
-			p = current;
-		if (p)
-			error = set_one_prio(p, niceval, error);
-		break;
-		case PRIO_PGRP:
-		if (who)
-			pgrp = find_pid(who);
-		else
-			pgrp = task_pgrp(current);
-		do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
-			error = set_one_prio(p, niceval, error);
-		} while_each_pid_task(pgrp, PIDTYPE_PGID, p);
-		break;
-		case PRIO_USER:
-		user = current->user;
-		if (!who)
-			who = current->uid;
-		else
-			if ((who != current->uid) && !(user = find_user(who)))
-					goto out_unlock;	/* No processes for this user */
+    read_lock(&tasklist_lock);
+    switch (which) {
+        case PRIO_PROCESS:
+        if (who)
+            p = find_task_by_pid(who);
+        else
+            p = current;
+        if (p)
+            error = set_one_prio(p, niceval, error);
+        break;
+        case PRIO_PGRP:
+        if (who)
+            pgrp = find_pid(who);
+        else
+            pgrp = task_pgrp(current);
+        do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
+            error = set_one_prio(p, niceval, error);
+        } while_each_pid_task(pgrp, PIDTYPE_PGID, p);
+        break;
+        case PRIO_USER:
+        user = current->user;
+        if (!who)
+            who = current->uid;
+        else
+            if ((who != current->uid) && !(user = find_user(who)))
+                    goto out_unlock;    /* No processes for this user */
 
-				do_each_thread(g, p)
-			if (p->uid == who)
-				error = set_one_prio(p, niceval, error);
-			while_each_thread(g, p);
-			if (who != current->uid)
-				free_uid(user);		/* For find_user() */
-				break;
-		}
-		out_unlock:
-		read_unlock(&tasklist_lock);
-		out:
-		return error;
-	}
+                do_each_thread(g, p)
+            if (p->uid == who)
+                error = set_one_prio(p, niceval, error);
+            while_each_thread(g, p);
+            if (who != current->uid)
+                free_uid(user);        /* For find_user() */
+                break;
+        }
+        out_unlock:
+        read_unlock(&tasklist_lock);
+        out:
+        return error;
+    }
 
 /*
  * Ugh. To avoid negative return values, "getpriority()" will
@@ -729,164 +729,164 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * has been offset by 20 (ie it returns 40..1 instead of -20..19)
  * to stay compatible.
  */
-	asmlinkage long sys_getpriority(int which, int who)
-	{
-		struct task_struct *g, *p;
-		struct user_struct *user;
-		long niceval, retval = -ESRCH;
-		struct pid *pgrp;
+    asmlinkage long sys_getpriority(int which, int who)
+    {
+        struct task_struct *g, *p;
+        struct user_struct *user;
+        long niceval, retval = -ESRCH;
+        struct pid *pgrp;
 
-		if (which > PRIO_USER || which < PRIO_PROCESS)
-			return -EINVAL;
+        if (which > PRIO_USER || which < PRIO_PROCESS)
+            return -EINVAL;
 
-		read_lock(&tasklist_lock);
-		switch (which) {
-			case PRIO_PROCESS:
-			if (who)
-				p = find_task_by_pid(who);
-			else
-				p = current;
-			if (p) {
-				niceval = 20 - task_nice(p);
-				if (niceval > retval)
-					retval = niceval;
-			}
-			break;
-			case PRIO_PGRP:
-			if (who)
-				pgrp = find_pid(who);
-			else
-				pgrp = task_pgrp(current);
-			do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
-				niceval = 20 - task_nice(p);
-				if (niceval > retval)
-					retval = niceval;
-			} while_each_pid_task(pgrp, PIDTYPE_PGID, p);
-			break;
-			case PRIO_USER:
-			user = current->user;
-			if (!who)
-				who = current->uid;
-			else
-				if ((who != current->uid) && !(user = find_user(who)))
-					goto out_unlock;	/* No processes for this user */
+        read_lock(&tasklist_lock);
+        switch (which) {
+            case PRIO_PROCESS:
+            if (who)
+                p = find_task_by_pid(who);
+            else
+                p = current;
+            if (p) {
+                niceval = 20 - task_nice(p);
+                if (niceval > retval)
+                    retval = niceval;
+            }
+            break;
+            case PRIO_PGRP:
+            if (who)
+                pgrp = find_pid(who);
+            else
+                pgrp = task_pgrp(current);
+            do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
+                niceval = 20 - task_nice(p);
+                if (niceval > retval)
+                    retval = niceval;
+            } while_each_pid_task(pgrp, PIDTYPE_PGID, p);
+            break;
+            case PRIO_USER:
+            user = current->user;
+            if (!who)
+                who = current->uid;
+            else
+                if ((who != current->uid) && !(user = find_user(who)))
+                    goto out_unlock;    /* No processes for this user */
 
-					do_each_thread(g, p)
-				if (p->uid == who) {
-					niceval = 20 - task_nice(p);
-					if (niceval > retval)
-						retval = niceval;
-				}
-				while_each_thread(g, p);
-				if (who != current->uid)
-				free_uid(user);		/* for find_user() */
-					break;
-			}
-			out_unlock:
-			read_unlock(&tasklist_lock);
+                    do_each_thread(g, p)
+                if (p->uid == who) {
+                    niceval = 20 - task_nice(p);
+                    if (niceval > retval)
+                        retval = niceval;
+                }
+                while_each_thread(g, p);
+                if (who != current->uid)
+                free_uid(user);        /* for find_user() */
+                    break;
+            }
+            out_unlock:
+            read_unlock(&tasklist_lock);
 
-			return retval;
-		}
-
-/**
- *	emergency_restart - reboot the system
- *
- *	Without shutting down any hardware or taking any locks
- *	reboot the system.  This is called when we know we are in
- *	trouble so this is our best effort to reboot.  This is
- *	safe to call in interrupt context.
- */
-		void emergency_restart(void)
-		{
-			machine_emergency_restart();
-		}
-		EXPORT_SYMBOL_GPL(emergency_restart);
-
-		static void kernel_restart_prepare(char *cmd)
-		{
-			blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
-			system_state = SYSTEM_RESTART;
-			device_shutdown();
-			sysdev_shutdown();
-		}
+            return retval;
+        }
 
 /**
- *	kernel_restart - reboot the system
- *	@cmd: pointer to buffer containing command to execute for restart
- *		or %NULL
+ *    emergency_restart - reboot the system
  *
- *	Shutdown everything and perform a clean reboot.
- *	This is not safe to call in interrupt context.
+ *    Without shutting down any hardware or taking any locks
+ *    reboot the system.  This is called when we know we are in
+ *    trouble so this is our best effort to reboot.  This is
+ *    safe to call in interrupt context.
  */
-		void kernel_restart(char *cmd)
-		{
-			kernel_restart_prepare(cmd);
-			if (!cmd)
-				printk(KERN_EMERG "Restarting system.\n");
-			else
-				printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-			machine_restart(cmd);
-		}
-		EXPORT_SYMBOL_GPL(kernel_restart);
+        void emergency_restart(void)
+        {
+            machine_emergency_restart();
+        }
+        EXPORT_SYMBOL_GPL(emergency_restart);
+
+        static void kernel_restart_prepare(char *cmd)
+        {
+            blocking_notifier_call_chain(&reboot_notifier_list, SYS_RESTART, cmd);
+            system_state = SYSTEM_RESTART;
+            device_shutdown();
+            sysdev_shutdown();
+        }
 
 /**
- *	kernel_kexec - reboot the system
+ *    kernel_restart - reboot the system
+ *    @cmd: pointer to buffer containing command to execute for restart
+ *        or %NULL
  *
- *	Move into place and start executing a preloaded standalone
- *	executable.  If nothing was preloaded return an error.
+ *    Shutdown everything and perform a clean reboot.
+ *    This is not safe to call in interrupt context.
  */
-		static void kernel_kexec(void)
-		{
+        void kernel_restart(char *cmd)
+        {
+            kernel_restart_prepare(cmd);
+            if (!cmd)
+                printk(KERN_EMERG "Restarting system.\n");
+            else
+                printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+            machine_restart(cmd);
+        }
+        EXPORT_SYMBOL_GPL(kernel_restart);
+
+/**
+ *    kernel_kexec - reboot the system
+ *
+ *    Move into place and start executing a preloaded standalone
+ *    executable.  If nothing was preloaded return an error.
+ */
+        static void kernel_kexec(void)
+        {
 #ifdef CONFIG_KEXEC
-			struct kimage *image;
-			image = xchg(&kexec_image, NULL);
-			if (!image)
-				return;
-			kernel_restart_prepare(NULL);
-			printk(KERN_EMERG "Starting new kernel\n");
-			machine_shutdown();
-			machine_kexec(image);
+            struct kimage *image;
+            image = xchg(&kexec_image, NULL);
+            if (!image)
+                return;
+            kernel_restart_prepare(NULL);
+            printk(KERN_EMERG "Starting new kernel\n");
+            machine_shutdown();
+            machine_kexec(image);
 #endif
-		}
+        }
 
-		void kernel_shutdown_prepare(enum system_states state)
-		{
-			blocking_notifier_call_chain(&reboot_notifier_list,
-				(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
-			system_state = state;
-			device_shutdown();
-		}
+        void kernel_shutdown_prepare(enum system_states state)
+        {
+            blocking_notifier_call_chain(&reboot_notifier_list,
+                (state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
+            system_state = state;
+            device_shutdown();
+        }
 /**
- *	kernel_halt - halt the system
+ *    kernel_halt - halt the system
  *
- *	Shutdown everything and perform a clean system halt.
+ *    Shutdown everything and perform a clean system halt.
  */
-		void kernel_halt(void)
-		{
-			kernel_shutdown_prepare(SYSTEM_HALT);
-			sysdev_shutdown();
-			printk(KERN_EMERG "System halted.\n");
-			machine_halt();
-		}
+        void kernel_halt(void)
+        {
+            kernel_shutdown_prepare(SYSTEM_HALT);
+            sysdev_shutdown();
+            printk(KERN_EMERG "System halted.\n");
+            machine_halt();
+        }
 
-		EXPORT_SYMBOL_GPL(kernel_halt);
+        EXPORT_SYMBOL_GPL(kernel_halt);
 
 /**
- *	kernel_power_off - power_off the system
+ *    kernel_power_off - power_off the system
  *
- *	Shutdown everything and perform a clean system power_off.
+ *    Shutdown everything and perform a clean system power_off.
  */
-		void kernel_power_off(void)
-		{
-			kernel_shutdown_prepare(SYSTEM_POWER_OFF);
-			if (pm_power_off_prepare)
-				pm_power_off_prepare();
-			disable_nonboot_cpus();
-			sysdev_shutdown();
-			printk(KERN_EMERG "Power down.\n");
-			machine_power_off();
-		}
-		EXPORT_SYMBOL_GPL(kernel_power_off);
+        void kernel_power_off(void)
+        {
+            kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+            if (pm_power_off_prepare)
+                pm_power_off_prepare();
+            disable_nonboot_cpus();
+            sysdev_shutdown();
+            printk(KERN_EMERG "Power down.\n");
+            machine_power_off();
+        }
+        EXPORT_SYMBOL_GPL(kernel_power_off);
 /*
  * Reboot system call: for obvious reasons only root may call it,
  * and even root needs to set up some magic numbers in the registers
@@ -895,105 +895,105 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  *
  * reboot doesn't sync: do that yourself before calling this.
  */
-		asmlinkage long sys_reboot(int magic1, int magic2, unsigned int cmd, void __user * arg)
-		{
-			char buffer[256];
+        asmlinkage long sys_reboot(int magic1, int magic2, unsigned int cmd, void __user * arg)
+        {
+            char buffer[256];
 
-	/* We only trust the superuser with rebooting the system. */
-			if (!capable(CAP_SYS_BOOT))
-				return -EPERM;
+    /* We only trust the superuser with rebooting the system. */
+            if (!capable(CAP_SYS_BOOT))
+                return -EPERM;
 
-	/* For safety, we require "magic" arguments. */
-			if (magic1 != LINUX_REBOOT_MAGIC1 ||
-				(magic2 != LINUX_REBOOT_MAGIC2 &&
-					magic2 != LINUX_REBOOT_MAGIC2A &&
-					magic2 != LINUX_REBOOT_MAGIC2B &&
-					magic2 != LINUX_REBOOT_MAGIC2C))
-				return -EINVAL;
+    /* For safety, we require "magic" arguments. */
+            if (magic1 != LINUX_REBOOT_MAGIC1 ||
+                (magic2 != LINUX_REBOOT_MAGIC2 &&
+                    magic2 != LINUX_REBOOT_MAGIC2A &&
+                    magic2 != LINUX_REBOOT_MAGIC2B &&
+                    magic2 != LINUX_REBOOT_MAGIC2C))
+                return -EINVAL;
 
-	/* Instead of trying to make the power_off code look like
-	 * halt when pm_power_off is not set do it the easy way.
-	 */
-			if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
-				cmd = LINUX_REBOOT_CMD_HALT;
+    /* Instead of trying to make the power_off code look like
+     * halt when pm_power_off is not set do it the easy way.
+     */
+            if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
+                cmd = LINUX_REBOOT_CMD_HALT;
 
-			lock_kernel();
-			switch (cmd) {
-				case LINUX_REBOOT_CMD_RESTART:
-				kernel_restart(NULL);
-				break;
+            lock_kernel();
+            switch (cmd) {
+                case LINUX_REBOOT_CMD_RESTART:
+                kernel_restart(NULL);
+                break;
 
-				case LINUX_REBOOT_CMD_CAD_ON:
-				C_A_D = 1;
-				break;
+                case LINUX_REBOOT_CMD_CAD_ON:
+                C_A_D = 1;
+                break;
 
-				case LINUX_REBOOT_CMD_CAD_OFF:
-				C_A_D = 0;
-				break;
+                case LINUX_REBOOT_CMD_CAD_OFF:
+                C_A_D = 0;
+                break;
 
-				case LINUX_REBOOT_CMD_HALT:
-				kernel_halt();
-				unlock_kernel();
-				do_exit(0);
-				break;
+                case LINUX_REBOOT_CMD_HALT:
+                kernel_halt();
+                unlock_kernel();
+                do_exit(0);
+                break;
 
-				case LINUX_REBOOT_CMD_POWER_OFF:
-				kernel_power_off();
-				unlock_kernel();
-				do_exit(0);
-				break;
+                case LINUX_REBOOT_CMD_POWER_OFF:
+                kernel_power_off();
+                unlock_kernel();
+                do_exit(0);
+                break;
 
-				case LINUX_REBOOT_CMD_RESTART2:
-				if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
-					unlock_kernel();
-					return -EFAULT;
-				}
-				buffer[sizeof(buffer) - 1] = '\0';
+                case LINUX_REBOOT_CMD_RESTART2:
+                if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+                    unlock_kernel();
+                    return -EFAULT;
+                }
+                buffer[sizeof(buffer) - 1] = '\0';
 
-				kernel_restart(buffer);
-				break;
+                kernel_restart(buffer);
+                break;
 
-				case LINUX_REBOOT_CMD_KEXEC:
-				kernel_kexec();
-				unlock_kernel();
-				return -EINVAL;
+                case LINUX_REBOOT_CMD_KEXEC:
+                kernel_kexec();
+                unlock_kernel();
+                return -EINVAL;
 
 #ifdef CONFIG_HIBERNATION
-				case LINUX_REBOOT_CMD_SW_SUSPEND:
-				{
-					int ret = hibernate();
-					unlock_kernel();
-					return ret;
-				}
+                case LINUX_REBOOT_CMD_SW_SUSPEND:
+                {
+                    int ret = hibernate();
+                    unlock_kernel();
+                    return ret;
+                }
 #endif
 
-				default:
-				unlock_kernel();
-				return -EINVAL;
-			}
-			unlock_kernel();
-			return 0;
-		}
+                default:
+                unlock_kernel();
+                return -EINVAL;
+            }
+            unlock_kernel();
+            return 0;
+        }
 
-		static void deferred_cad(struct work_struct *dummy)
-		{
-			kernel_restart(NULL);
-		}
+        static void deferred_cad(struct work_struct *dummy)
+        {
+            kernel_restart(NULL);
+        }
 
 /*
  * This function gets called by ctrl-alt-del - ie the keyboard interrupt.
  * As it's called within an interrupt, it may NOT sync: the only choice
  * is whether to reboot at once, or just ignore the ctrl-alt-del.
  */
-		void ctrl_alt_del(void)
-		{
-			static DECLARE_WORK(cad_work, deferred_cad);
+        void ctrl_alt_del(void)
+        {
+            static DECLARE_WORK(cad_work, deferred_cad);
 
-			if (C_A_D)
-				schedule_work(&cad_work);
-			else
-				kill_cad_pid(SIGINT, 1);
-		}
+            if (C_A_D)
+                schedule_work(&cad_work);
+            else
+                kill_cad_pid(SIGINT, 1);
+        }
 
 /*
  * Unprivileged users may change the real gid to the effective gid
@@ -1013,109 +1013,109 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * SMP: There are not races, the GIDs are checked only by filesystem
  *      operations (as far as semantic preservation is concerned).
  */
-		asmlinkage long sys_setregid(gid_t rgid, gid_t egid)
-		{
-			int old_rgid = current->gid;
-			int old_egid = current->egid;
-			int new_rgid = old_rgid;
-			int new_egid = old_egid;
-			int retval;
+        asmlinkage long sys_setregid(gid_t rgid, gid_t egid)
+        {
+            int old_rgid = current->gid;
+            int old_egid = current->egid;
+            int new_rgid = old_rgid;
+            int new_egid = old_egid;
+            int retval;
 
-			retval = security_task_setgid(rgid, egid, (gid_t)-1, LSM_SETID_RE);
-			if (retval)
-				return retval;
+            retval = security_task_setgid(rgid, egid, (gid_t)-1, LSM_SETID_RE);
+            if (retval)
+                return retval;
 
-			if (rgid != (gid_t) -1) {
-				if ((old_rgid == rgid) ||
-					(current->egid==rgid) ||
-					capable(CAP_SETGID))
-					new_rgid = rgid;
-				else
-					return -EPERM;
-			}
-			if (egid != (gid_t) -1) {
-				if ((old_rgid == egid) ||
-					(current->egid == egid) ||
-					(current->sgid == egid) ||
-					capable(CAP_SETGID))
-					new_egid = egid;
-				else
-					return -EPERM;
-			}
-			if (new_egid != old_egid) {
-				set_dumpable(current->mm, suid_dumpable);
-				smp_wmb();
-			}
-			if (rgid != (gid_t) -1 ||
-				(egid != (gid_t) -1 && egid != old_rgid))
-				current->sgid = new_egid;
-			current->fsgid = new_egid;
-			current->egid = new_egid;
-			current->gid = new_rgid;
-			key_fsgid_changed(current);
-			proc_id_connector(current, PROC_EVENT_GID);
-			return 0;
-		}
+            if (rgid != (gid_t) -1) {
+                if ((old_rgid == rgid) ||
+                    (current->egid==rgid) ||
+                    capable(CAP_SETGID))
+                    new_rgid = rgid;
+                else
+                    return -EPERM;
+            }
+            if (egid != (gid_t) -1) {
+                if ((old_rgid == egid) ||
+                    (current->egid == egid) ||
+                    (current->sgid == egid) ||
+                    capable(CAP_SETGID))
+                    new_egid = egid;
+                else
+                    return -EPERM;
+            }
+            if (new_egid != old_egid) {
+                set_dumpable(current->mm, suid_dumpable);
+                smp_wmb();
+            }
+            if (rgid != (gid_t) -1 ||
+                (egid != (gid_t) -1 && egid != old_rgid))
+                current->sgid = new_egid;
+            current->fsgid = new_egid;
+            current->egid = new_egid;
+            current->gid = new_rgid;
+            key_fsgid_changed(current);
+            proc_id_connector(current, PROC_EVENT_GID);
+            return 0;
+        }
 
 /*
  * setgid() is implemented like SysV w/ SAVED_IDS 
  *
  * SMP: Same implicit races as above.
  */
-		asmlinkage long sys_setgid(gid_t gid)
-		{
-			int old_egid = current->egid;
-			int retval;
+        asmlinkage long sys_setgid(gid_t gid)
+        {
+            int old_egid = current->egid;
+            int retval;
 
-			retval = security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_ID);
-			if (retval)
-				return retval;
+            retval = security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_ID);
+            if (retval)
+                return retval;
 
-			if (capable(CAP_SETGID)) {
-				if (old_egid != gid) {
-					set_dumpable(current->mm, suid_dumpable);
-					smp_wmb();
-				}
-				current->gid = current->egid = current->sgid = current->fsgid = gid;
-			} else if ((gid == current->gid) || (gid == current->sgid)) {
-				if (old_egid != gid) {
-					set_dumpable(current->mm, suid_dumpable);
-					smp_wmb();
-				}
-				current->egid = current->fsgid = gid;
-			}
-			else
-				return -EPERM;
+            if (capable(CAP_SETGID)) {
+                if (old_egid != gid) {
+                    set_dumpable(current->mm, suid_dumpable);
+                    smp_wmb();
+                }
+                current->gid = current->egid = current->sgid = current->fsgid = gid;
+            } else if ((gid == current->gid) || (gid == current->sgid)) {
+                if (old_egid != gid) {
+                    set_dumpable(current->mm, suid_dumpable);
+                    smp_wmb();
+                }
+                current->egid = current->fsgid = gid;
+            }
+            else
+                return -EPERM;
 
-			key_fsgid_changed(current);
-			proc_id_connector(current, PROC_EVENT_GID);
-			return 0;
-		}
+            key_fsgid_changed(current);
+            proc_id_connector(current, PROC_EVENT_GID);
+            return 0;
+        }
 
-		static int set_user(uid_t new_ruid, int dumpclear)
-		{
-			struct user_struct *new_user;
+        static int set_user(uid_t new_ruid, int dumpclear)
+        {
+            struct user_struct *new_user;
 
-			new_user = alloc_uid(current->nsproxy->user_ns, new_ruid);
-			if (!new_user)
-				return -EAGAIN;
+            new_user = alloc_uid(current->nsproxy->user_ns, new_ruid);
+            if (!new_user)
+                return -EAGAIN;
 
-			if (atomic_read(&new_user->processes) >=
-				current->signal->rlim[RLIMIT_NPROC].rlim_cur &&
-				new_user != current->nsproxy->user_ns->root_user) {
-				free_uid(new_user);
-			return -EAGAIN;
-		}
+            if (atomic_read(&new_user->processes) >=
+                current->signal->rlim[RLIMIT_NPROC].rlim_cur &&
+                new_user != current->nsproxy->user_ns->root_user) {
+                free_uid(new_user);
+            return -EAGAIN;
+        }
 
-		switch_uid(new_user);
+        switch_uid(new_user);
 
-		if (dumpclear) {
-			set_dumpable(current->mm, suid_dumpable);
-			smp_wmb();
-		}
-		current->uid = new_ruid;
-		return 0;
-	}
+        if (dumpclear) {
+            set_dumpable(current->mm, suid_dumpable);
+            smp_wmb();
+        }
+        current->uid = new_ruid;
+        return 0;
+    }
 
 /*
  * Unprivileged users may change the real uid to the effective uid
@@ -1132,54 +1132,54 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * 100% compatible with BSD.  A program which uses just setuid() will be
  * 100% compatible with POSIX with saved IDs. 
  */
-	asmlinkage long sys_setreuid(uid_t ruid, uid_t euid)
-	{
-		int old_ruid, old_euid, old_suid, new_ruid, new_euid;
-		int retval;
+    asmlinkage long sys_setreuid(uid_t ruid, uid_t euid)
+    {
+        int old_ruid, old_euid, old_suid, new_ruid, new_euid;
+        int retval;
 
-		retval = security_task_setuid(ruid, euid, (uid_t)-1, LSM_SETID_RE);
-		if (retval)
-			return retval;
+        retval = security_task_setuid(ruid, euid, (uid_t)-1, LSM_SETID_RE);
+        if (retval)
+            return retval;
 
-		new_ruid = old_ruid = current->uid;
-		new_euid = old_euid = current->euid;
-		old_suid = current->suid;
+        new_ruid = old_ruid = current->uid;
+        new_euid = old_euid = current->euid;
+        old_suid = current->suid;
 
-		if (ruid != (uid_t) -1) {
-			new_ruid = ruid;
-			if ((old_ruid != ruid) &&
-				(current->euid != ruid) &&
-				!capable(CAP_SETUID))
-				return -EPERM;
-		}
+        if (ruid != (uid_t) -1) {
+            new_ruid = ruid;
+            if ((old_ruid != ruid) &&
+                (current->euid != ruid) &&
+                !capable(CAP_SETUID))
+                return -EPERM;
+        }
 
-		if (euid != (uid_t) -1) {
-			new_euid = euid;
-			if ((old_ruid != euid) &&
-				(current->euid != euid) &&
-				(current->suid != euid) &&
-				!capable(CAP_SETUID))
-				return -EPERM;
-		}
+        if (euid != (uid_t) -1) {
+            new_euid = euid;
+            if ((old_ruid != euid) &&
+                (current->euid != euid) &&
+                (current->suid != euid) &&
+                !capable(CAP_SETUID))
+                return -EPERM;
+        }
 
-		if (new_ruid != old_ruid && set_user(new_ruid, new_euid != old_euid) < 0)
-			return -EAGAIN;
+        if (new_ruid != old_ruid && set_user(new_ruid, new_euid != old_euid) < 0)
+            return -EAGAIN;
 
-		if (new_euid != old_euid) {
-			set_dumpable(current->mm, suid_dumpable);
-			smp_wmb();
-		}
-		current->fsuid = current->euid = new_euid;
-		if (ruid != (uid_t) -1 ||
-			(euid != (uid_t) -1 && euid != old_ruid))
-			current->suid = current->euid;
-		current->fsuid = current->euid;
+        if (new_euid != old_euid) {
+            set_dumpable(current->mm, suid_dumpable);
+            smp_wmb();
+        }
+        current->fsuid = current->euid = new_euid;
+        if (ruid != (uid_t) -1 ||
+            (euid != (uid_t) -1 && euid != old_ruid))
+            current->suid = current->euid;
+        current->fsuid = current->euid;
 
-		key_fsuid_changed(current);
-		proc_id_connector(current, PROC_EVENT_UID);
+        key_fsuid_changed(current);
+        proc_id_connector(current, PROC_EVENT_UID);
 
-		return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_RE);
-	}
+        return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_RE);
+    }
 
 
 
@@ -1194,149 +1194,149 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * will allow a root program to temporarily drop privileges and be able to
  * regain them by swapping the real and effective uid.  
  */
-	asmlinkage long sys_setuid(uid_t uid)
-	{
-		int old_euid = current->euid;
-		int old_ruid, old_suid, new_suid;
-		int retval;
+    asmlinkage long sys_setuid(uid_t uid)
+    {
+        int old_euid = current->euid;
+        int old_ruid, old_suid, new_suid;
+        int retval;
 
-		retval = security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_ID);
-		if (retval)
-			return retval;
+        retval = security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_ID);
+        if (retval)
+            return retval;
 
-		old_ruid = current->uid;
-		old_suid = current->suid;
-		new_suid = old_suid;
+        old_ruid = current->uid;
+        old_suid = current->suid;
+        new_suid = old_suid;
 
-		if (capable(CAP_SETUID)) {
-			if (uid != old_ruid && set_user(uid, old_euid != uid) < 0)
-				return -EAGAIN;
-			new_suid = uid;
-		} else if ((uid != current->uid) && (uid != new_suid))
-		return -EPERM;
+        if (capable(CAP_SETUID)) {
+            if (uid != old_ruid && set_user(uid, old_euid != uid) < 0)
+                return -EAGAIN;
+            new_suid = uid;
+        } else if ((uid != current->uid) && (uid != new_suid))
+        return -EPERM;
 
-		if (old_euid != uid) {
-			set_dumpable(current->mm, suid_dumpable);
-			smp_wmb();
-		}
-		current->fsuid = current->euid = uid;
-		current->suid = new_suid;
+        if (old_euid != uid) {
+            set_dumpable(current->mm, suid_dumpable);
+            smp_wmb();
+        }
+        current->fsuid = current->euid = uid;
+        current->suid = new_suid;
 
-		key_fsuid_changed(current);
-		proc_id_connector(current, PROC_EVENT_UID);
+        key_fsuid_changed(current);
+        proc_id_connector(current, PROC_EVENT_UID);
 
-		return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_ID);
-	}
+        return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_ID);
+    }
 
 
 /*
  * This function implements a generic ability to update ruid, euid,
  * and suid.  This allows you to implement the 4.4 compatible seteuid().
  */
-	asmlinkage long sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
-	{
-		int old_ruid = current->uid;
-		int old_euid = current->euid;
-		int old_suid = current->suid;
-		int retval;
+    asmlinkage long sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
+    {
+        int old_ruid = current->uid;
+        int old_euid = current->euid;
+        int old_suid = current->suid;
+        int retval;
 
-		retval = security_task_setuid(ruid, euid, suid, LSM_SETID_RES);
-		if (retval)
-			return retval;
+        retval = security_task_setuid(ruid, euid, suid, LSM_SETID_RES);
+        if (retval)
+            return retval;
 
-		if (!capable(CAP_SETUID)) {
-			if ((ruid != (uid_t) -1) && (ruid != current->uid) &&
-				(ruid != current->euid) && (ruid != current->suid))
-				return -EPERM;
-			if ((euid != (uid_t) -1) && (euid != current->uid) &&
-				(euid != current->euid) && (euid != current->suid))
-				return -EPERM;
-			if ((suid != (uid_t) -1) && (suid != current->uid) &&
-				(suid != current->euid) && (suid != current->suid))
-				return -EPERM;
-		}
-		if (ruid != (uid_t) -1) {
-			if (ruid != current->uid && set_user(ruid, euid != current->euid) < 0)
-				return -EAGAIN;
-		}
-		if (euid != (uid_t) -1) {
-			if (euid != current->euid) {
-				set_dumpable(current->mm, suid_dumpable);
-				smp_wmb();
-			}
-			current->euid = euid;
-		}
-		current->fsuid = current->euid;
-		if (suid != (uid_t) -1)
-			current->suid = suid;
+        if (!capable(CAP_SETUID)) {
+            if ((ruid != (uid_t) -1) && (ruid != current->uid) &&
+                (ruid != current->euid) && (ruid != current->suid))
+                return -EPERM;
+            if ((euid != (uid_t) -1) && (euid != current->uid) &&
+                (euid != current->euid) && (euid != current->suid))
+                return -EPERM;
+            if ((suid != (uid_t) -1) && (suid != current->uid) &&
+                (suid != current->euid) && (suid != current->suid))
+                return -EPERM;
+        }
+        if (ruid != (uid_t) -1) {
+            if (ruid != current->uid && set_user(ruid, euid != current->euid) < 0)
+                return -EAGAIN;
+        }
+        if (euid != (uid_t) -1) {
+            if (euid != current->euid) {
+                set_dumpable(current->mm, suid_dumpable);
+                smp_wmb();
+            }
+            current->euid = euid;
+        }
+        current->fsuid = current->euid;
+        if (suid != (uid_t) -1)
+            current->suid = suid;
 
-		key_fsuid_changed(current);
-		proc_id_connector(current, PROC_EVENT_UID);
+        key_fsuid_changed(current);
+        proc_id_connector(current, PROC_EVENT_UID);
 
-		return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_RES);
-	}
+        return security_task_post_setuid(old_ruid, old_euid, old_suid, LSM_SETID_RES);
+    }
 
-	asmlinkage long sys_getresuid(uid_t __user *ruid, uid_t __user *euid, uid_t __user *suid)
-	{
-		int retval;
+    asmlinkage long sys_getresuid(uid_t __user *ruid, uid_t __user *euid, uid_t __user *suid)
+    {
+        int retval;
 
-		if (!(retval = put_user(current->uid, ruid)) &&
-			!(retval = put_user(current->euid, euid)))
-			retval = put_user(current->suid, suid);
+        if (!(retval = put_user(current->uid, ruid)) &&
+            !(retval = put_user(current->euid, euid)))
+            retval = put_user(current->suid, suid);
 
-		return retval;
-	}
+        return retval;
+    }
 
 /*
  * Same as above, but for rgid, egid, sgid.
  */
-	asmlinkage long sys_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
-	{
-		int retval;
+    asmlinkage long sys_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
+    {
+        int retval;
 
-		retval = security_task_setgid(rgid, egid, sgid, LSM_SETID_RES);
-		if (retval)
-			return retval;
+        retval = security_task_setgid(rgid, egid, sgid, LSM_SETID_RES);
+        if (retval)
+            return retval;
 
-		if (!capable(CAP_SETGID)) {
-			if ((rgid != (gid_t) -1) && (rgid != current->gid) &&
-				(rgid != current->egid) && (rgid != current->sgid))
-				return -EPERM;
-			if ((egid != (gid_t) -1) && (egid != current->gid) &&
-				(egid != current->egid) && (egid != current->sgid))
-				return -EPERM;
-			if ((sgid != (gid_t) -1) && (sgid != current->gid) &&
-				(sgid != current->egid) && (sgid != current->sgid))
-				return -EPERM;
-		}
-		if (egid != (gid_t) -1) {
-			if (egid != current->egid) {
-				set_dumpable(current->mm, suid_dumpable);
-				smp_wmb();
-			}
-			current->egid = egid;
-		}
-		current->fsgid = current->egid;
-		if (rgid != (gid_t) -1)
-			current->gid = rgid;
-		if (sgid != (gid_t) -1)
-			current->sgid = sgid;
+        if (!capable(CAP_SETGID)) {
+            if ((rgid != (gid_t) -1) && (rgid != current->gid) &&
+                (rgid != current->egid) && (rgid != current->sgid))
+                return -EPERM;
+            if ((egid != (gid_t) -1) && (egid != current->gid) &&
+                (egid != current->egid) && (egid != current->sgid))
+                return -EPERM;
+            if ((sgid != (gid_t) -1) && (sgid != current->gid) &&
+                (sgid != current->egid) && (sgid != current->sgid))
+                return -EPERM;
+        }
+        if (egid != (gid_t) -1) {
+            if (egid != current->egid) {
+                set_dumpable(current->mm, suid_dumpable);
+                smp_wmb();
+            }
+            current->egid = egid;
+        }
+        current->fsgid = current->egid;
+        if (rgid != (gid_t) -1)
+            current->gid = rgid;
+        if (sgid != (gid_t) -1)
+            current->sgid = sgid;
 
-		key_fsgid_changed(current);
-		proc_id_connector(current, PROC_EVENT_GID);
-		return 0;
-	}
+        key_fsgid_changed(current);
+        proc_id_connector(current, PROC_EVENT_GID);
+        return 0;
+    }
 
-	asmlinkage long sys_getresgid(gid_t __user *rgid, gid_t __user *egid, gid_t __user *sgid)
-	{
-		int retval;
+    asmlinkage long sys_getresgid(gid_t __user *rgid, gid_t __user *egid, gid_t __user *sgid)
+    {
+        int retval;
 
-		if (!(retval = put_user(current->gid, rgid)) &&
-			!(retval = put_user(current->egid, egid)))
-			retval = put_user(current->sgid, sgid);
+        if (!(retval = put_user(current->gid, rgid)) &&
+            !(retval = put_user(current->egid, egid)))
+            retval = put_user(current->sgid, sgid);
 
-		return retval;
-	}
+        return retval;
+    }
 
 
 /*
@@ -1345,94 +1345,94 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * whatever uid it wants to). It normally shadows "euid", except when
  * explicitly set by setfsuid() or for access..
  */
-	asmlinkage long sys_setfsuid(uid_t uid)
-	{
-		int old_fsuid;
+    asmlinkage long sys_setfsuid(uid_t uid)
+    {
+        int old_fsuid;
 
-		old_fsuid = current->fsuid;
-		if (security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS))
-			return old_fsuid;
+        old_fsuid = current->fsuid;
+        if (security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS))
+            return old_fsuid;
 
-		if (uid == current->uid || uid == current->euid ||
-			uid == current->suid || uid == current->fsuid || 
-			capable(CAP_SETUID)) {
-			if (uid != old_fsuid) {
-				set_dumpable(current->mm, suid_dumpable);
-				smp_wmb();
-			}
-			current->fsuid = uid;
-		}
+        if (uid == current->uid || uid == current->euid ||
+            uid == current->suid || uid == current->fsuid || 
+            capable(CAP_SETUID)) {
+            if (uid != old_fsuid) {
+                set_dumpable(current->mm, suid_dumpable);
+                smp_wmb();
+            }
+            current->fsuid = uid;
+        }
 
-		key_fsuid_changed(current);
-		proc_id_connector(current, PROC_EVENT_UID);
+        key_fsuid_changed(current);
+        proc_id_connector(current, PROC_EVENT_UID);
 
-		security_task_post_setuid(old_fsuid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS);
+        security_task_post_setuid(old_fsuid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS);
 
-		return old_fsuid;
-	}
+        return old_fsuid;
+    }
 
 /*
  * Samma på svenska..
  */
-	asmlinkage long sys_setfsgid(gid_t gid)
-	{
-		int old_fsgid;
+    asmlinkage long sys_setfsgid(gid_t gid)
+    {
+        int old_fsgid;
 
-		old_fsgid = current->fsgid;
-		if (security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_FS))
-			return old_fsgid;
+        old_fsgid = current->fsgid;
+        if (security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_FS))
+            return old_fsgid;
 
-		if (gid == current->gid || gid == current->egid ||
-			gid == current->sgid || gid == current->fsgid || 
-			capable(CAP_SETGID)) {
-			if (gid != old_fsgid) {
-				set_dumpable(current->mm, suid_dumpable);
-				smp_wmb();
-			}
-			current->fsgid = gid;
-			key_fsgid_changed(current);
-			proc_id_connector(current, PROC_EVENT_GID);
-		}
-		return old_fsgid;
-	}
+        if (gid == current->gid || gid == current->egid ||
+            gid == current->sgid || gid == current->fsgid || 
+            capable(CAP_SETGID)) {
+            if (gid != old_fsgid) {
+                set_dumpable(current->mm, suid_dumpable);
+                smp_wmb();
+            }
+            current->fsgid = gid;
+            key_fsgid_changed(current);
+            proc_id_connector(current, PROC_EVENT_GID);
+        }
+        return old_fsgid;
+    }
 
-	asmlinkage long sys_times(struct tms __user * tbuf)
-	{
-	/*
-	 *	In the SMP world we might just be unlucky and have one of
-	 *	the times increment as we use it. Since the value is an
-	 *	atomically safe type this is just fine. Conceptually its
-	 *	as if the syscall took an instant longer to occur.
-	 */
-		if (tbuf) {
-			struct tms tmp;
-			struct task_struct *tsk = current;
-			struct task_struct *t;
-			cputime_t utime, stime, cutime, cstime;
+    asmlinkage long sys_times(struct tms __user * tbuf)
+    {
+    /*
+     *    In the SMP world we might just be unlucky and have one of
+     *    the times increment as we use it. Since the value is an
+     *    atomically safe type this is just fine. Conceptually its
+     *    as if the syscall took an instant longer to occur.
+     */
+        if (tbuf) {
+            struct tms tmp;
+            struct task_struct *tsk = current;
+            struct task_struct *t;
+            cputime_t utime, stime, cutime, cstime;
 
-			spin_lock_irq(&tsk->sighand->siglock);
-			utime = tsk->signal->utime;
-			stime = tsk->signal->stime;
-			t = tsk;
-			do {
-				utime = cputime_add(utime, t->utime);
-				stime = cputime_add(stime, t->stime);
-				t = next_thread(t);
-			} while (t != tsk);
+            spin_lock_irq(&tsk->sighand->siglock);
+            utime = tsk->signal->utime;
+            stime = tsk->signal->stime;
+            t = tsk;
+            do {
+                utime = cputime_add(utime, t->utime);
+                stime = cputime_add(stime, t->stime);
+                t = next_thread(t);
+            } while (t != tsk);
 
-			cutime = tsk->signal->cutime;
-			cstime = tsk->signal->cstime;
-			spin_unlock_irq(&tsk->sighand->siglock);
+            cutime = tsk->signal->cutime;
+            cstime = tsk->signal->cstime;
+            spin_unlock_irq(&tsk->sighand->siglock);
 
-			tmp.tms_utime = cputime_to_clock_t(utime);
-			tmp.tms_stime = cputime_to_clock_t(stime);
-			tmp.tms_cutime = cputime_to_clock_t(cutime);
-			tmp.tms_cstime = cputime_to_clock_t(cstime);
-			if (copy_to_user(tbuf, &tmp, sizeof(struct tms)))
-				return -EFAULT;
-		}
-		return (long) jiffies_64_to_clock_t(get_jiffies_64());
-	}
+            tmp.tms_utime = cputime_to_clock_t(utime);
+            tmp.tms_stime = cputime_to_clock_t(stime);
+            tmp.tms_cutime = cputime_to_clock_t(cutime);
+            tmp.tms_cstime = cputime_to_clock_t(cstime);
+            if (copy_to_user(tbuf, &tmp, sizeof(struct tms)))
+                return -EFAULT;
+        }
+        return (long) jiffies_64_to_clock_t(get_jiffies_64());
+    }
 
 /*
  * This needs some heavy checking ...
@@ -1446,474 +1446,474 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * Auch. Had to add the 'did_exec' flag to conform completely to POSIX.
  * LBT 04.03.94
  */
-	asmlinkage long sys_setpgid(pid_t pid, pid_t pgid)
-	{
-		struct task_struct *p;
-		struct task_struct *group_leader = current->group_leader;
-		int err = -EINVAL;
+    asmlinkage long sys_setpgid(pid_t pid, pid_t pgid)
+    {
+        struct task_struct *p;
+        struct task_struct *group_leader = current->group_leader;
+        int err = -EINVAL;
 
-		if (!pid)
-			pid = group_leader->pid;
-		if (!pgid)
-			pgid = pid;
-		if (pgid < 0)
-			return -EINVAL;
+        if (!pid)
+            pid = group_leader->pid;
+        if (!pgid)
+            pgid = pid;
+        if (pgid < 0)
+            return -EINVAL;
 
-	/* From this point forward we keep holding onto the tasklist lock
-	 * so that our parent does not change from under us. -DaveM
-	 */
-		write_lock_irq(&tasklist_lock);
+    /* From this point forward we keep holding onto the tasklist lock
+     * so that our parent does not change from under us. -DaveM
+     */
+        write_lock_irq(&tasklist_lock);
 
-		err = -ESRCH;
-		p = find_task_by_pid(pid);
-		if (!p)
-			goto out;
+        err = -ESRCH;
+        p = find_task_by_pid(pid);
+        if (!p)
+            goto out;
 
-		err = -EINVAL;
-		if (!thread_group_leader(p))
-			goto out;
+        err = -EINVAL;
+        if (!thread_group_leader(p))
+            goto out;
 
-		if (p->real_parent->tgid == group_leader->tgid) {
-			err = -EPERM;
-			if (task_session(p) != task_session(group_leader))
-				goto out;
-			err = -EACCES;
-			if (p->did_exec)
-				goto out;
-		} else {
-			err = -ESRCH;
-			if (p != group_leader)
-				goto out;
-		}
+        if (p->real_parent->tgid == group_leader->tgid) {
+            err = -EPERM;
+            if (task_session(p) != task_session(group_leader))
+                goto out;
+            err = -EACCES;
+            if (p->did_exec)
+                goto out;
+        } else {
+            err = -ESRCH;
+            if (p != group_leader)
+                goto out;
+        }
 
-		err = -EPERM;
-		if (p->signal->leader)
-			goto out;
+        err = -EPERM;
+        if (p->signal->leader)
+            goto out;
 
-		if (pgid != pid) {
-			struct task_struct *g =
-			find_task_by_pid_type(PIDTYPE_PGID, pgid);
+        if (pgid != pid) {
+            struct task_struct *g =
+            find_task_by_pid_type(PIDTYPE_PGID, pgid);
 
-			if (!g || task_session(g) != task_session(group_leader))
-				goto out;
-		}
+            if (!g || task_session(g) != task_session(group_leader))
+                goto out;
+        }
 
-		err = security_task_setpgid(p, pgid);
-		if (err)
-			goto out;
+        err = security_task_setpgid(p, pgid);
+        if (err)
+            goto out;
 
-		if (process_group(p) != pgid) {
-			detach_pid(p, PIDTYPE_PGID);
-			p->signal->pgrp = pgid;
-			attach_pid(p, PIDTYPE_PGID, find_pid(pgid));
-		}
+        if (process_group(p) != pgid) {
+            detach_pid(p, PIDTYPE_PGID);
+            p->signal->pgrp = pgid;
+            attach_pid(p, PIDTYPE_PGID, find_pid(pgid));
+        }
 
-		err = 0;
-		out:
-	/* All paths lead to here, thus we are safe. -DaveM */
-		write_unlock_irq(&tasklist_lock);
-		return err;
-	}
+        err = 0;
+        out:
+    /* All paths lead to here, thus we are safe. -DaveM */
+        write_unlock_irq(&tasklist_lock);
+        return err;
+    }
 
-	asmlinkage long sys_getpgid(pid_t pid)
-	{
-		if (!pid)
-			return process_group(current);
-		else {
-			int retval;
-			struct task_struct *p;
+    asmlinkage long sys_getpgid(pid_t pid)
+    {
+        if (!pid)
+            return process_group(current);
+        else {
+            int retval;
+            struct task_struct *p;
 
-			read_lock(&tasklist_lock);
-			p = find_task_by_pid(pid);
+            read_lock(&tasklist_lock);
+            p = find_task_by_pid(pid);
 
-			retval = -ESRCH;
-			if (p) {
-				retval = security_task_getpgid(p);
-				if (!retval)
-					retval = process_group(p);
-			}
-			read_unlock(&tasklist_lock);
-			return retval;
-		}
-	}
+            retval = -ESRCH;
+            if (p) {
+                retval = security_task_getpgid(p);
+                if (!retval)
+                    retval = process_group(p);
+            }
+            read_unlock(&tasklist_lock);
+            return retval;
+        }
+    }
 
 #ifdef __ARCH_WANT_SYS_GETPGRP
 
-	asmlinkage long sys_getpgrp(void)
-	{
-	/* SMP - assuming writes are word atomic this is fine */
-		return process_group(current);
-	}
+    asmlinkage long sys_getpgrp(void)
+    {
+    /* SMP - assuming writes are word atomic this is fine */
+        return process_group(current);
+    }
 
 #endif
 
-	asmlinkage long sys_getsid(pid_t pid)
-	{
-		if (!pid)
-			return process_session(current);
-		else {
-			int retval;
-			struct task_struct *p;
+    asmlinkage long sys_getsid(pid_t pid)
+    {
+        if (!pid)
+            return process_session(current);
+        else {
+            int retval;
+            struct task_struct *p;
 
-			read_lock(&tasklist_lock);
-			p = find_task_by_pid(pid);
+            read_lock(&tasklist_lock);
+            p = find_task_by_pid(pid);
 
-			retval = -ESRCH;
-			if (p) {
-				retval = security_task_getsid(p);
-				if (!retval)
-					retval = process_session(p);
-			}
-			read_unlock(&tasklist_lock);
-			return retval;
-		}
-	}
+            retval = -ESRCH;
+            if (p) {
+                retval = security_task_getsid(p);
+                if (!retval)
+                    retval = process_session(p);
+            }
+            read_unlock(&tasklist_lock);
+            return retval;
+        }
+    }
 
-	asmlinkage long sys_setsid(void)
-	{
-		struct task_struct *group_leader = current->group_leader;
-		pid_t session;
-		int err = -EPERM;
+    asmlinkage long sys_setsid(void)
+    {
+        struct task_struct *group_leader = current->group_leader;
+        pid_t session;
+        int err = -EPERM;
 
-		write_lock_irq(&tasklist_lock);
+        write_lock_irq(&tasklist_lock);
 
-	/* Fail if I am already a session leader */
-		if (group_leader->signal->leader)
-			goto out;
+    /* Fail if I am already a session leader */
+        if (group_leader->signal->leader)
+            goto out;
 
-		session = group_leader->pid;
-	/* Fail if a process group id already exists that equals the
-	 * proposed session id.
-	 *
-	 * Don't check if session id == 1 because kernel threads use this
-	 * session id and so the check will always fail and make it so
-	 * init cannot successfully call setsid.
-	 */
-		if (session > 1 && find_task_by_pid_type(PIDTYPE_PGID, session))
-			goto out;
+        session = group_leader->pid;
+    /* Fail if a process group id already exists that equals the
+     * proposed session id.
+     *
+     * Don't check if session id == 1 because kernel threads use this
+     * session id and so the check will always fail and make it so
+     * init cannot successfully call setsid.
+     */
+        if (session > 1 && find_task_by_pid_type(PIDTYPE_PGID, session))
+            goto out;
 
-		group_leader->signal->leader = 1;
-		__set_special_pids(session, session);
+        group_leader->signal->leader = 1;
+        __set_special_pids(session, session);
 
-		spin_lock(&group_leader->sighand->siglock);
-		group_leader->signal->tty = NULL;
-		spin_unlock(&group_leader->sighand->siglock);
+        spin_lock(&group_leader->sighand->siglock);
+        group_leader->signal->tty = NULL;
+        spin_unlock(&group_leader->sighand->siglock);
 
-		err = process_group(group_leader);
-		out:
-		write_unlock_irq(&tasklist_lock);
-		return err;
-	}
+        err = process_group(group_leader);
+        out:
+        write_unlock_irq(&tasklist_lock);
+        return err;
+    }
 
 /*
  * Supplementary group IDs
  */
 
 /* init to 2 - one for init_task, one to ensure it is never freed */
-	struct group_info init_groups = { .usage = ATOMIC_INIT(2) };
+    struct group_info init_groups = { .usage = ATOMIC_INIT(2) };
 
-	struct group_info *groups_alloc(int gidsetsize)
-	{
-		struct group_info *group_info;
-		int nblocks;
-		int i;
+    struct group_info *groups_alloc(int gidsetsize)
+    {
+        struct group_info *group_info;
+        int nblocks;
+        int i;
 
-		nblocks = (gidsetsize + NGROUPS_PER_BLOCK - 1) / NGROUPS_PER_BLOCK;
-	/* Make sure we always allocate at least one indirect block pointer */
-		nblocks = nblocks ? : 1;
-		group_info = kmalloc(sizeof(*group_info) + nblocks*sizeof(gid_t *), GFP_USER);
-		if (!group_info)
-			return NULL;
-		group_info->ngroups = gidsetsize;
-		group_info->nblocks = nblocks;
-		atomic_set(&group_info->usage, 1);
+        nblocks = (gidsetsize + NGROUPS_PER_BLOCK - 1) / NGROUPS_PER_BLOCK;
+    /* Make sure we always allocate at least one indirect block pointer */
+        nblocks = nblocks ? : 1;
+        group_info = kmalloc(sizeof(*group_info) + nblocks*sizeof(gid_t *), GFP_USER);
+        if (!group_info)
+            return NULL;
+        group_info->ngroups = gidsetsize;
+        group_info->nblocks = nblocks;
+        atomic_set(&group_info->usage, 1);
 
-		if (gidsetsize <= NGROUPS_SMALL)
-			group_info->blocks[0] = group_info->small_block;
-		else {
-			for (i = 0; i < nblocks; i++) {
-				gid_t *b;
-				b = (void *)__get_free_page(GFP_USER);
-				if (!b)
-					goto out_undo_partial_alloc;
-				group_info->blocks[i] = b;
-			}
-		}
-		return group_info;
+        if (gidsetsize <= NGROUPS_SMALL)
+            group_info->blocks[0] = group_info->small_block;
+        else {
+            for (i = 0; i < nblocks; i++) {
+                gid_t *b;
+                b = (void *)__get_free_page(GFP_USER);
+                if (!b)
+                    goto out_undo_partial_alloc;
+                group_info->blocks[i] = b;
+            }
+        }
+        return group_info;
 
-		out_undo_partial_alloc:
-		while (--i >= 0) {
-			free_page((unsigned long)group_info->blocks[i]);
-		}
-		kfree(group_info);
-		return NULL;
-	}
+        out_undo_partial_alloc:
+        while (--i >= 0) {
+            free_page((unsigned long)group_info->blocks[i]);
+        }
+        kfree(group_info);
+        return NULL;
+    }
 
-	EXPORT_SYMBOL(groups_alloc);
+    EXPORT_SYMBOL(groups_alloc);
 
-	void groups_free(struct group_info *group_info)
-	{
-		if (group_info->blocks[0] != group_info->small_block) {
-			int i;
-			for (i = 0; i < group_info->nblocks; i++)
-				free_page((unsigned long)group_info->blocks[i]);
-		}
-		kfree(group_info);
-	}
+    void groups_free(struct group_info *group_info)
+    {
+        if (group_info->blocks[0] != group_info->small_block) {
+            int i;
+            for (i = 0; i < group_info->nblocks; i++)
+                free_page((unsigned long)group_info->blocks[i]);
+        }
+        kfree(group_info);
+    }
 
-	EXPORT_SYMBOL(groups_free);
+    EXPORT_SYMBOL(groups_free);
 
 /* export the group_info to a user-space array */
-	static int groups_to_user(gid_t __user *grouplist,
-		struct group_info *group_info)
-	{
-		int i;
-		int count = group_info->ngroups;
+    static int groups_to_user(gid_t __user *grouplist,
+        struct group_info *group_info)
+    {
+        int i;
+        int count = group_info->ngroups;
 
-		for (i = 0; i < group_info->nblocks; i++) {
-			int cp_count = min(NGROUPS_PER_BLOCK, count);
-			int off = i * NGROUPS_PER_BLOCK;
-			int len = cp_count * sizeof(*grouplist);
+        for (i = 0; i < group_info->nblocks; i++) {
+            int cp_count = min(NGROUPS_PER_BLOCK, count);
+            int off = i * NGROUPS_PER_BLOCK;
+            int len = cp_count * sizeof(*grouplist);
 
-			if (copy_to_user(grouplist+off, group_info->blocks[i], len))
-				return -EFAULT;
+            if (copy_to_user(grouplist+off, group_info->blocks[i], len))
+                return -EFAULT;
 
-			count -= cp_count;
-		}
-		return 0;
-	}
+            count -= cp_count;
+        }
+        return 0;
+    }
 
 /* fill a group_info from a user-space array - it must be allocated already */
-	static int groups_from_user(struct group_info *group_info,
-		gid_t __user *grouplist)
-	{
-		int i;
-		int count = group_info->ngroups;
+    static int groups_from_user(struct group_info *group_info,
+        gid_t __user *grouplist)
+    {
+        int i;
+        int count = group_info->ngroups;
 
-		for (i = 0; i < group_info->nblocks; i++) {
-			int cp_count = min(NGROUPS_PER_BLOCK, count);
-			int off = i * NGROUPS_PER_BLOCK;
-			int len = cp_count * sizeof(*grouplist);
+        for (i = 0; i < group_info->nblocks; i++) {
+            int cp_count = min(NGROUPS_PER_BLOCK, count);
+            int off = i * NGROUPS_PER_BLOCK;
+            int len = cp_count * sizeof(*grouplist);
 
-			if (copy_from_user(group_info->blocks[i], grouplist+off, len))
-				return -EFAULT;
+            if (copy_from_user(group_info->blocks[i], grouplist+off, len))
+                return -EFAULT;
 
-			count -= cp_count;
-		}
-		return 0;
-	}
+            count -= cp_count;
+        }
+        return 0;
+    }
 
 /* a simple Shell sort */
-	static void groups_sort(struct group_info *group_info)
-	{
-		int base, max, stride;
-		int gidsetsize = group_info->ngroups;
+    static void groups_sort(struct group_info *group_info)
+    {
+        int base, max, stride;
+        int gidsetsize = group_info->ngroups;
 
-		for (stride = 1; stride < gidsetsize; stride = 3 * stride + 1)
-		; /* nothing */
-			stride /= 3;
+        for (stride = 1; stride < gidsetsize; stride = 3 * stride + 1)
+        ; /* nothing */
+            stride /= 3;
 
-		while (stride) {
-			max = gidsetsize - stride;
-			for (base = 0; base < max; base++) {
-				int left = base;
-				int right = left + stride;
-				gid_t tmp = GROUP_AT(group_info, right);
+        while (stride) {
+            max = gidsetsize - stride;
+            for (base = 0; base < max; base++) {
+                int left = base;
+                int right = left + stride;
+                gid_t tmp = GROUP_AT(group_info, right);
 
-				while (left >= 0 && GROUP_AT(group_info, left) > tmp) {
-					GROUP_AT(group_info, right) =
-					GROUP_AT(group_info, left);
-					right = left;
-					left -= stride;
-				}
-				GROUP_AT(group_info, right) = tmp;
-			}
-			stride /= 3;
-		}
-	}
+                while (left >= 0 && GROUP_AT(group_info, left) > tmp) {
+                    GROUP_AT(group_info, right) =
+                    GROUP_AT(group_info, left);
+                    right = left;
+                    left -= stride;
+                }
+                GROUP_AT(group_info, right) = tmp;
+            }
+            stride /= 3;
+        }
+    }
 
 /* a simple bsearch */
-	int groups_search(struct group_info *group_info, gid_t grp)
-	{
-		unsigned int left, right;
+    int groups_search(struct group_info *group_info, gid_t grp)
+    {
+        unsigned int left, right;
 
-		if (!group_info)
-			return 0;
+        if (!group_info)
+            return 0;
 
-		left = 0;
-		right = group_info->ngroups;
-		while (left < right) {
-			unsigned int mid = (left+right)/2;
-			int cmp = grp - GROUP_AT(group_info, mid);
-			if (cmp > 0)
-				left = mid + 1;
-			else if (cmp < 0)
-				right = mid;
-			else
-				return 1;
-		}
-		return 0;
-	}
+        left = 0;
+        right = group_info->ngroups;
+        while (left < right) {
+            unsigned int mid = (left+right)/2;
+            int cmp = grp - GROUP_AT(group_info, mid);
+            if (cmp > 0)
+                left = mid + 1;
+            else if (cmp < 0)
+                right = mid;
+            else
+                return 1;
+        }
+        return 0;
+    }
 
 /* validate and set current->group_info */
-	int set_current_groups(struct group_info *group_info)
-	{
-		int retval;
-		struct group_info *old_info;
+    int set_current_groups(struct group_info *group_info)
+    {
+        int retval;
+        struct group_info *old_info;
 
-		retval = security_task_setgroups(group_info);
-		if (retval)
-			return retval;
+        retval = security_task_setgroups(group_info);
+        if (retval)
+            return retval;
 
-		groups_sort(group_info);
-		get_group_info(group_info);
+        groups_sort(group_info);
+        get_group_info(group_info);
 
-		task_lock(current);
-		old_info = current->group_info;
-		current->group_info = group_info;
-		task_unlock(current);
+        task_lock(current);
+        old_info = current->group_info;
+        current->group_info = group_info;
+        task_unlock(current);
 
-		put_group_info(old_info);
+        put_group_info(old_info);
 
-		return 0;
-	}
+        return 0;
+    }
 
-	EXPORT_SYMBOL(set_current_groups);
+    EXPORT_SYMBOL(set_current_groups);
 
-	asmlinkage long sys_getgroups(int gidsetsize, gid_t __user *grouplist)
-	{
-		int i = 0;
+    asmlinkage long sys_getgroups(int gidsetsize, gid_t __user *grouplist)
+    {
+        int i = 0;
 
-	/*
-	 *	SMP: Nobody else can change our grouplist. Thus we are
-	 *	safe.
-	 */
+    /*
+     *    SMP: Nobody else can change our grouplist. Thus we are
+     *    safe.
+     */
 
-		if (gidsetsize < 0)
-			return -EINVAL;
+        if (gidsetsize < 0)
+            return -EINVAL;
 
-	/* no need to grab task_lock here; it cannot change */
-		i = current->group_info->ngroups;
-		if (gidsetsize) {
-			if (i > gidsetsize) {
-				i = -EINVAL;
-				goto out;
-			}
-			if (groups_to_user(grouplist, current->group_info)) {
-				i = -EFAULT;
-				goto out;
-			}
-		}
-		out:
-		return i;
-	}
+    /* no need to grab task_lock here; it cannot change */
+        i = current->group_info->ngroups;
+        if (gidsetsize) {
+            if (i > gidsetsize) {
+                i = -EINVAL;
+                goto out;
+            }
+            if (groups_to_user(grouplist, current->group_info)) {
+                i = -EFAULT;
+                goto out;
+            }
+        }
+        out:
+        return i;
+    }
 
 /*
- *	SMP: Our groups are copy-on-write. We can set them safely
- *	without another task interfering.
+ *    SMP: Our groups are copy-on-write. We can set them safely
+ *    without another task interfering.
  */
 
-	asmlinkage long sys_setgroups(int gidsetsize, gid_t __user *grouplist)
-	{
-		struct group_info *group_info;
-		int retval;
+    asmlinkage long sys_setgroups(int gidsetsize, gid_t __user *grouplist)
+    {
+        struct group_info *group_info;
+        int retval;
 
-		if (!capable(CAP_SETGID))
-			return -EPERM;
-		if ((unsigned)gidsetsize > NGROUPS_MAX)
-			return -EINVAL;
+        if (!capable(CAP_SETGID))
+            return -EPERM;
+        if ((unsigned)gidsetsize > NGROUPS_MAX)
+            return -EINVAL;
 
-		group_info = groups_alloc(gidsetsize);
-		if (!group_info)
-			return -ENOMEM;
-		retval = groups_from_user(group_info, grouplist);
-		if (retval) {
-			put_group_info(group_info);
-			return retval;
-		}
+        group_info = groups_alloc(gidsetsize);
+        if (!group_info)
+            return -ENOMEM;
+        retval = groups_from_user(group_info, grouplist);
+        if (retval) {
+            put_group_info(group_info);
+            return retval;
+        }
 
-		retval = set_current_groups(group_info);
-		put_group_info(group_info);
+        retval = set_current_groups(group_info);
+        put_group_info(group_info);
 
-		return retval;
-	}
+        return retval;
+    }
 
 /*
  * Check whether we're fsgid/egid or in the supplemental group..
  */
-	int in_group_p(gid_t grp)
-	{
-		int retval = 1;
-		if (grp != current->fsgid)
-			retval = groups_search(current->group_info, grp);
-		return retval;
-	}
+    int in_group_p(gid_t grp)
+    {
+        int retval = 1;
+        if (grp != current->fsgid)
+            retval = groups_search(current->group_info, grp);
+        return retval;
+    }
 
-	EXPORT_SYMBOL(in_group_p);
+    EXPORT_SYMBOL(in_group_p);
 
-	int in_egroup_p(gid_t grp)
-	{
-		int retval = 1;
-		if (grp != current->egid)
-			retval = groups_search(current->group_info, grp);
-		return retval;
-	}
+    int in_egroup_p(gid_t grp)
+    {
+        int retval = 1;
+        if (grp != current->egid)
+            retval = groups_search(current->group_info, grp);
+        return retval;
+    }
 
-	EXPORT_SYMBOL(in_egroup_p);
+    EXPORT_SYMBOL(in_egroup_p);
 
-	DECLARE_RWSEM(uts_sem);
+    DECLARE_RWSEM(uts_sem);
 
-	EXPORT_SYMBOL(uts_sem);
+    EXPORT_SYMBOL(uts_sem);
 
-	asmlinkage long sys_newuname(struct new_utsname __user * name)
-	{
-		int errno = 0;
+    asmlinkage long sys_newuname(struct new_utsname __user * name)
+    {
+        int errno = 0;
 
-		down_read(&uts_sem);
-		if (copy_to_user(name, utsname(), sizeof *name))
-			errno = -EFAULT;
-		up_read(&uts_sem);
-		return errno;
-	}
+        down_read(&uts_sem);
+        if (copy_to_user(name, utsname(), sizeof *name))
+            errno = -EFAULT;
+        up_read(&uts_sem);
+        return errno;
+    }
 
-	asmlinkage long sys_sethostname(char __user *name, int len)
-	{
-		int errno;
-		char tmp[__NEW_UTS_LEN];
+    asmlinkage long sys_sethostname(char __user *name, int len)
+    {
+        int errno;
+        char tmp[__NEW_UTS_LEN];
 
-		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
-		if (len < 0 || len > __NEW_UTS_LEN)
-			return -EINVAL;
-		down_write(&uts_sem);
-		errno = -EFAULT;
-		if (!copy_from_user(tmp, name, len)) {
-			memcpy(utsname()->nodename, tmp, len);
-			utsname()->nodename[len] = 0;
-			errno = 0;
-		}
-		up_write(&uts_sem);
-		return errno;
-	}
+        if (!capable(CAP_SYS_ADMIN))
+            return -EPERM;
+        if (len < 0 || len > __NEW_UTS_LEN)
+            return -EINVAL;
+        down_write(&uts_sem);
+        errno = -EFAULT;
+        if (!copy_from_user(tmp, name, len)) {
+            memcpy(utsname()->nodename, tmp, len);
+            utsname()->nodename[len] = 0;
+            errno = 0;
+        }
+        up_write(&uts_sem);
+        return errno;
+    }
 
 #ifdef __ARCH_WANT_SYS_GETHOSTNAME
 
-	asmlinkage long sys_gethostname(char __user *name, int len)
-	{
-		int i, errno;
+    asmlinkage long sys_gethostname(char __user *name, int len)
+    {
+        int i, errno;
 
-		if (len < 0)
-			return -EINVAL;
-		down_read(&uts_sem);
-		i = 1 + strlen(utsname()->nodename);
-		if (i > len)
-			i = len;
-		errno = 0;
-		if (copy_to_user(name, utsname()->nodename, i))
-			errno = -EFAULT;
-		up_read(&uts_sem);
-		return errno;
-	}
+        if (len < 0)
+            return -EINVAL;
+        down_read(&uts_sem);
+        i = 1 + strlen(utsname()->nodename);
+        if (i > len)
+            i = len;
+        errno = 0;
+        if (copy_to_user(name, utsname()->nodename, i))
+            errno = -EFAULT;
+        up_read(&uts_sem);
+        return errno;
+    }
 
 #endif
 
@@ -1921,128 +1921,128 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * Only setdomainname; getdomainname can be implemented by calling
  * uname()
  */
-	asmlinkage long sys_setdomainname(char __user *name, int len)
-	{
-		int errno;
-		char tmp[__NEW_UTS_LEN];
+    asmlinkage long sys_setdomainname(char __user *name, int len)
+    {
+        int errno;
+        char tmp[__NEW_UTS_LEN];
 
-		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
-		if (len < 0 || len > __NEW_UTS_LEN)
-			return -EINVAL;
+        if (!capable(CAP_SYS_ADMIN))
+            return -EPERM;
+        if (len < 0 || len > __NEW_UTS_LEN)
+            return -EINVAL;
 
-		down_write(&uts_sem);
-		errno = -EFAULT;
-		if (!copy_from_user(tmp, name, len)) {
-			memcpy(utsname()->domainname, tmp, len);
-			utsname()->domainname[len] = 0;
-			errno = 0;
-		}
-		up_write(&uts_sem);
-		return errno;
-	}
+        down_write(&uts_sem);
+        errno = -EFAULT;
+        if (!copy_from_user(tmp, name, len)) {
+            memcpy(utsname()->domainname, tmp, len);
+            utsname()->domainname[len] = 0;
+            errno = 0;
+        }
+        up_write(&uts_sem);
+        return errno;
+    }
 
-	asmlinkage long sys_getrlimit(unsigned int resource, struct rlimit __user *rlim)
-	{
-		if (resource >= RLIM_NLIMITS)
-			return -EINVAL;
-		else {
-			struct rlimit value;
-			task_lock(current->group_leader);
-			value = current->signal->rlim[resource];
-			task_unlock(current->group_leader);
-			return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
-		}
-	}
+    asmlinkage long sys_getrlimit(unsigned int resource, struct rlimit __user *rlim)
+    {
+        if (resource >= RLIM_NLIMITS)
+            return -EINVAL;
+        else {
+            struct rlimit value;
+            task_lock(current->group_leader);
+            value = current->signal->rlim[resource];
+            task_unlock(current->group_leader);
+            return copy_to_user(rlim, &value, sizeof(*rlim)) ? -EFAULT : 0;
+        }
+    }
 
 #ifdef __ARCH_WANT_SYS_OLD_GETRLIMIT
 
 /*
- *	Back compatibility for getrlimit. Needed for some apps.
+ *    Back compatibility for getrlimit. Needed for some apps.
  */
 
-	asmlinkage long sys_old_getrlimit(unsigned int resource, struct rlimit __user *rlim)
-	{
-		struct rlimit x;
-		if (resource >= RLIM_NLIMITS)
-			return -EINVAL;
+    asmlinkage long sys_old_getrlimit(unsigned int resource, struct rlimit __user *rlim)
+    {
+        struct rlimit x;
+        if (resource >= RLIM_NLIMITS)
+            return -EINVAL;
 
-		task_lock(current->group_leader);
-		x = current->signal->rlim[resource];
-		task_unlock(current->group_leader);
-		if (x.rlim_cur > 0x7FFFFFFF)
-			x.rlim_cur = 0x7FFFFFFF;
-		if (x.rlim_max > 0x7FFFFFFF)
-			x.rlim_max = 0x7FFFFFFF;
-		return copy_to_user(rlim, &x, sizeof(x))?-EFAULT:0;
-	}
+        task_lock(current->group_leader);
+        x = current->signal->rlim[resource];
+        task_unlock(current->group_leader);
+        if (x.rlim_cur > 0x7FFFFFFF)
+            x.rlim_cur = 0x7FFFFFFF;
+        if (x.rlim_max > 0x7FFFFFFF)
+            x.rlim_max = 0x7FFFFFFF;
+        return copy_to_user(rlim, &x, sizeof(x))?-EFAULT:0;
+    }
 
 #endif
 
-	asmlinkage long sys_setrlimit(unsigned int resource, struct rlimit __user *rlim)
-	{
-		struct rlimit new_rlim, *old_rlim;
-		unsigned long it_prof_secs;
-		int retval;
+    asmlinkage long sys_setrlimit(unsigned int resource, struct rlimit __user *rlim)
+    {
+        struct rlimit new_rlim, *old_rlim;
+        unsigned long it_prof_secs;
+        int retval;
 
-		if (resource >= RLIM_NLIMITS)
-			return -EINVAL;
-		if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
-			return -EFAULT;
-		if (new_rlim.rlim_cur > new_rlim.rlim_max)
-			return -EINVAL;
-		old_rlim = current->signal->rlim + resource;
-		if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
-			!capable(CAP_SYS_RESOURCE))
-			return -EPERM;
-		if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > NR_OPEN)
-			return -EPERM;
+        if (resource >= RLIM_NLIMITS)
+            return -EINVAL;
+        if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
+            return -EFAULT;
+        if (new_rlim.rlim_cur > new_rlim.rlim_max)
+            return -EINVAL;
+        old_rlim = current->signal->rlim + resource;
+        if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
+            !capable(CAP_SYS_RESOURCE))
+            return -EPERM;
+        if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > NR_OPEN)
+            return -EPERM;
 
-		retval = security_task_setrlimit(resource, &new_rlim);
-		if (retval)
-			return retval;
+        retval = security_task_setrlimit(resource, &new_rlim);
+        if (retval)
+            return retval;
 
-		if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
-		/*
-		 * The caller is asking for an immediate RLIMIT_CPU
-		 * expiry.  But we use the zero value to mean "it was
-		 * never set".  So let's cheat and make it one second
-		 * instead
-		 */
-			new_rlim.rlim_cur = 1;
-		}
+        if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
+        /*
+         * The caller is asking for an immediate RLIMIT_CPU
+         * expiry.  But we use the zero value to mean "it was
+         * never set".  So let's cheat and make it one second
+         * instead
+         */
+            new_rlim.rlim_cur = 1;
+        }
 
-		task_lock(current->group_leader);
-		*old_rlim = new_rlim;
-		task_unlock(current->group_leader);
+        task_lock(current->group_leader);
+        *old_rlim = new_rlim;
+        task_unlock(current->group_leader);
 
-		if (resource != RLIMIT_CPU)
-			goto out;
+        if (resource != RLIMIT_CPU)
+            goto out;
 
-	/*
-	 * RLIMIT_CPU handling.   Note that the kernel fails to return an error
-	 * code if it rejected the user's attempt to set RLIMIT_CPU.  This is a
-	 * very long-standing error, and fixing it now risks breakage of
-	 * applications, so we live with it
-	 */
-		if (new_rlim.rlim_cur == RLIM_INFINITY)
-			goto out;
+    /*
+     * RLIMIT_CPU handling.   Note that the kernel fails to return an error
+     * code if it rejected the user's attempt to set RLIMIT_CPU.  This is a
+     * very long-standing error, and fixing it now risks breakage of
+     * applications, so we live with it
+     */
+        if (new_rlim.rlim_cur == RLIM_INFINITY)
+            goto out;
 
-		it_prof_secs = cputime_to_secs(current->signal->it_prof_expires);
-		if (it_prof_secs == 0 || new_rlim.rlim_cur <= it_prof_secs) {
-			unsigned long rlim_cur = new_rlim.rlim_cur;
-			cputime_t cputime;
+        it_prof_secs = cputime_to_secs(current->signal->it_prof_expires);
+        if (it_prof_secs == 0 || new_rlim.rlim_cur <= it_prof_secs) {
+            unsigned long rlim_cur = new_rlim.rlim_cur;
+            cputime_t cputime;
 
-			cputime = secs_to_cputime(rlim_cur);
-			read_lock(&tasklist_lock);
-			spin_lock_irq(&current->sighand->siglock);
-			set_process_cpu_timer(current, CPUCLOCK_PROF, &cputime, NULL);
-			spin_unlock_irq(&current->sighand->siglock);
-			read_unlock(&tasklist_lock);
-		}
-		out:
-		return 0;
-	}
+            cputime = secs_to_cputime(rlim_cur);
+            read_lock(&tasklist_lock);
+            spin_lock_irq(&current->sighand->siglock);
+            set_process_cpu_timer(current, CPUCLOCK_PROF, &cputime, NULL);
+            spin_unlock_irq(&current->sighand->siglock);
+            read_unlock(&tasklist_lock);
+        }
+        out:
+        return 0;
+    }
 
 /*
  * It would make sense to put struct rusage in the task_struct,
@@ -2077,237 +2077,237 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  *
  */
 
-	static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
-	{
-		struct task_struct *t;
-		unsigned long flags;
-		cputime_t utime, stime;
+    static void k_getrusage(struct task_struct *p, int who, struct rusage *r)
+    {
+        struct task_struct *t;
+        unsigned long flags;
+        cputime_t utime, stime;
 
-		memset((char *) r, 0, sizeof *r);
-		utime = stime = cputime_zero;
+        memset((char *) r, 0, sizeof *r);
+        utime = stime = cputime_zero;
 
-		rcu_read_lock();
-		if (!lock_task_sighand(p, &flags)) {
-			rcu_read_unlock();
-			return;
-		}
+        rcu_read_lock();
+        if (!lock_task_sighand(p, &flags)) {
+            rcu_read_unlock();
+            return;
+        }
 
-		switch (who) {
-			case RUSAGE_BOTH:
-			case RUSAGE_CHILDREN:
-			utime = p->signal->cutime;
-			stime = p->signal->cstime;
-			r->ru_nvcsw = p->signal->cnvcsw;
-			r->ru_nivcsw = p->signal->cnivcsw;
-			r->ru_minflt = p->signal->cmin_flt;
-			r->ru_majflt = p->signal->cmaj_flt;
-			r->ru_inblock = p->signal->cinblock;
-			r->ru_oublock = p->signal->coublock;
+        switch (who) {
+            case RUSAGE_BOTH:
+            case RUSAGE_CHILDREN:
+            utime = p->signal->cutime;
+            stime = p->signal->cstime;
+            r->ru_nvcsw = p->signal->cnvcsw;
+            r->ru_nivcsw = p->signal->cnivcsw;
+            r->ru_minflt = p->signal->cmin_flt;
+            r->ru_majflt = p->signal->cmaj_flt;
+            r->ru_inblock = p->signal->cinblock;
+            r->ru_oublock = p->signal->coublock;
 
-			if (who == RUSAGE_CHILDREN)
-				break;
+            if (who == RUSAGE_CHILDREN)
+                break;
 
-			case RUSAGE_SELF:
-			utime = cputime_add(utime, p->signal->utime);
-			stime = cputime_add(stime, p->signal->stime);
-			r->ru_nvcsw += p->signal->nvcsw;
-			r->ru_nivcsw += p->signal->nivcsw;
-			r->ru_minflt += p->signal->min_flt;
-			r->ru_majflt += p->signal->maj_flt;
-			r->ru_inblock += p->signal->inblock;
-			r->ru_oublock += p->signal->oublock;
-			t = p;
-			do {
-				utime = cputime_add(utime, t->utime);
-				stime = cputime_add(stime, t->stime);
-				r->ru_nvcsw += t->nvcsw;
-				r->ru_nivcsw += t->nivcsw;
-				r->ru_minflt += t->min_flt;
-				r->ru_majflt += t->maj_flt;
-				r->ru_inblock += task_io_get_inblock(t);
-				r->ru_oublock += task_io_get_oublock(t);
-				t = next_thread(t);
-			} while (t != p);
-			break;
+            case RUSAGE_SELF:
+            utime = cputime_add(utime, p->signal->utime);
+            stime = cputime_add(stime, p->signal->stime);
+            r->ru_nvcsw += p->signal->nvcsw;
+            r->ru_nivcsw += p->signal->nivcsw;
+            r->ru_minflt += p->signal->min_flt;
+            r->ru_majflt += p->signal->maj_flt;
+            r->ru_inblock += p->signal->inblock;
+            r->ru_oublock += p->signal->oublock;
+            t = p;
+            do {
+                utime = cputime_add(utime, t->utime);
+                stime = cputime_add(stime, t->stime);
+                r->ru_nvcsw += t->nvcsw;
+                r->ru_nivcsw += t->nivcsw;
+                r->ru_minflt += t->min_flt;
+                r->ru_majflt += t->maj_flt;
+                r->ru_inblock += task_io_get_inblock(t);
+                r->ru_oublock += task_io_get_oublock(t);
+                t = next_thread(t);
+            } while (t != p);
+            break;
 
-			default:
-			BUG();
-		}
+            default:
+            BUG();
+        }
 
-		unlock_task_sighand(p, &flags);
-		rcu_read_unlock();
+        unlock_task_sighand(p, &flags);
+        rcu_read_unlock();
 
-		cputime_to_timeval(utime, &r->ru_utime);
-		cputime_to_timeval(stime, &r->ru_stime);
-	}
+        cputime_to_timeval(utime, &r->ru_utime);
+        cputime_to_timeval(stime, &r->ru_stime);
+    }
 
-	int getrusage(struct task_struct *p, int who, struct rusage __user *ru)
-	{
-		struct rusage r;
-		k_getrusage(p, who, &r);
-		return copy_to_user(ru, &r, sizeof(r)) ? -EFAULT : 0;
-	}
+    int getrusage(struct task_struct *p, int who, struct rusage __user *ru)
+    {
+        struct rusage r;
+        k_getrusage(p, who, &r);
+        return copy_to_user(ru, &r, sizeof(r)) ? -EFAULT : 0;
+    }
 
-	asmlinkage long sys_getrusage(int who, struct rusage __user *ru)
-	{
-		if (who != RUSAGE_SELF && who != RUSAGE_CHILDREN)
-			return -EINVAL;
-		return getrusage(current, who, ru);
-	}
+    asmlinkage long sys_getrusage(int who, struct rusage __user *ru)
+    {
+        if (who != RUSAGE_SELF && who != RUSAGE_CHILDREN)
+            return -EINVAL;
+        return getrusage(current, who, ru);
+    }
 
-	asmlinkage long sys_umask(int mask)
-	{
-		mask = xchg(&current->fs->umask, mask & S_IRWXUGO);
-		return mask;
-	}
+    asmlinkage long sys_umask(int mask)
+    {
+        mask = xchg(&current->fs->umask, mask & S_IRWXUGO);
+        return mask;
+    }
 
-	asmlinkage long sys_prctl(int option, unsigned long arg2, unsigned long arg3,
-		unsigned long arg4, unsigned long arg5)
-	{
-		long error;
+    asmlinkage long sys_prctl(int option, unsigned long arg2, unsigned long arg3,
+        unsigned long arg4, unsigned long arg5)
+    {
+        long error;
 
-		error = security_task_prctl(option, arg2, arg3, arg4, arg5);
-		if (error)
-			return error;
+        error = security_task_prctl(option, arg2, arg3, arg4, arg5);
+        if (error)
+            return error;
 
-		switch (option) {
-			case PR_SET_PDEATHSIG:
-			if (!valid_signal(arg2)) {
-				error = -EINVAL;
-				break;
-			}
-			current->pdeath_signal = arg2;
-			break;
-			case PR_GET_PDEATHSIG:
-			error = put_user(current->pdeath_signal, (int __user *)arg2);
-			break;
-			case PR_GET_DUMPABLE:
-			error = get_dumpable(current->mm);
-			break;
-			case PR_SET_DUMPABLE:
-			if (arg2 < 0 || arg2 > 1) {
-				error = -EINVAL;
-				break;
-			}
-			set_dumpable(current->mm, arg2);
-			break;
+        switch (option) {
+            case PR_SET_PDEATHSIG:
+            if (!valid_signal(arg2)) {
+                error = -EINVAL;
+                break;
+            }
+            current->pdeath_signal = arg2;
+            break;
+            case PR_GET_PDEATHSIG:
+            error = put_user(current->pdeath_signal, (int __user *)arg2);
+            break;
+            case PR_GET_DUMPABLE:
+            error = get_dumpable(current->mm);
+            break;
+            case PR_SET_DUMPABLE:
+            if (arg2 < 0 || arg2 > 1) {
+                error = -EINVAL;
+                break;
+            }
+            set_dumpable(current->mm, arg2);
+            break;
 
-			case PR_SET_UNALIGN:
-			error = SET_UNALIGN_CTL(current, arg2);
-			break;
-			case PR_GET_UNALIGN:
-			error = GET_UNALIGN_CTL(current, arg2);
-			break;
-			case PR_SET_FPEMU:
-			error = SET_FPEMU_CTL(current, arg2);
-			break;
-			case PR_GET_FPEMU:
-			error = GET_FPEMU_CTL(current, arg2);
-			break;
-			case PR_SET_FPEXC:
-			error = SET_FPEXC_CTL(current, arg2);
-			break;
-			case PR_GET_FPEXC:
-			error = GET_FPEXC_CTL(current, arg2);
-			break;
-			case PR_GET_TIMING:
-			error = PR_TIMING_STATISTICAL;
-			break;
-			case PR_SET_TIMING:
-			if (arg2 == PR_TIMING_STATISTICAL)
-				error = 0;
-			else
-				error = -EINVAL;
-			break;
+            case PR_SET_UNALIGN:
+            error = SET_UNALIGN_CTL(current, arg2);
+            break;
+            case PR_GET_UNALIGN:
+            error = GET_UNALIGN_CTL(current, arg2);
+            break;
+            case PR_SET_FPEMU:
+            error = SET_FPEMU_CTL(current, arg2);
+            break;
+            case PR_GET_FPEMU:
+            error = GET_FPEMU_CTL(current, arg2);
+            break;
+            case PR_SET_FPEXC:
+            error = SET_FPEXC_CTL(current, arg2);
+            break;
+            case PR_GET_FPEXC:
+            error = GET_FPEXC_CTL(current, arg2);
+            break;
+            case PR_GET_TIMING:
+            error = PR_TIMING_STATISTICAL;
+            break;
+            case PR_SET_TIMING:
+            if (arg2 == PR_TIMING_STATISTICAL)
+                error = 0;
+            else
+                error = -EINVAL;
+            break;
 
-			case PR_GET_KEEPCAPS:
-			if (current->keep_capabilities)
-				error = 1;
-			break;
-			case PR_SET_KEEPCAPS:
-			if (arg2 != 0 && arg2 != 1) {
-				error = -EINVAL;
-				break;
-			}
-			current->keep_capabilities = arg2;
-			break;
-			case PR_SET_NAME: {
-				struct task_struct *me = current;
-				unsigned char ncomm[sizeof(me->comm)];
+            case PR_GET_KEEPCAPS:
+            if (current->keep_capabilities)
+                error = 1;
+            break;
+            case PR_SET_KEEPCAPS:
+            if (arg2 != 0 && arg2 != 1) {
+                error = -EINVAL;
+                break;
+            }
+            current->keep_capabilities = arg2;
+            break;
+            case PR_SET_NAME: {
+                struct task_struct *me = current;
+                unsigned char ncomm[sizeof(me->comm)];
 
-				ncomm[sizeof(me->comm)-1] = 0;
-				if (strncpy_from_user(ncomm, (char __user *)arg2,
-					sizeof(me->comm)-1) < 0)
-					return -EFAULT;
-				set_task_comm(me, ncomm);
-				return 0;
-			}
-			case PR_GET_NAME: {
-				struct task_struct *me = current;
-				unsigned char tcomm[sizeof(me->comm)];
+                ncomm[sizeof(me->comm)-1] = 0;
+                if (strncpy_from_user(ncomm, (char __user *)arg2,
+                    sizeof(me->comm)-1) < 0)
+                    return -EFAULT;
+                set_task_comm(me, ncomm);
+                return 0;
+            }
+            case PR_GET_NAME: {
+                struct task_struct *me = current;
+                unsigned char tcomm[sizeof(me->comm)];
 
-				get_task_comm(tcomm, me);
-				if (copy_to_user((char __user *)arg2, tcomm, sizeof(tcomm)))
-					return -EFAULT;
-				return 0;
-			}
-			case PR_GET_ENDIAN:
-			error = GET_ENDIAN(current, arg2);
-			break;
-			case PR_SET_ENDIAN:
-			error = SET_ENDIAN(current, arg2);
-			break;
+                get_task_comm(tcomm, me);
+                if (copy_to_user((char __user *)arg2, tcomm, sizeof(tcomm)))
+                    return -EFAULT;
+                return 0;
+            }
+            case PR_GET_ENDIAN:
+            error = GET_ENDIAN(current, arg2);
+            break;
+            case PR_SET_ENDIAN:
+            error = SET_ENDIAN(current, arg2);
+            break;
 
-			case PR_GET_SECCOMP:
-			error = prctl_get_seccomp();
-			break;
-			case PR_SET_SECCOMP:
-			error = prctl_set_seccomp(arg2);
-			break;
+            case PR_GET_SECCOMP:
+            error = prctl_get_seccomp();
+            break;
+            case PR_SET_SECCOMP:
+            error = prctl_set_seccomp(arg2);
+            break;
 
-			default:
-			error = -EINVAL;
-			break;
-		}
-		return error;
-	}
+            default:
+            error = -EINVAL;
+            break;
+        }
+        return error;
+    }
 
-	asmlinkage long sys_getcpu(unsigned __user *cpup, unsigned __user *nodep,
-		struct getcpu_cache __user *cache)
-	{
-		int err = 0;
-		int cpu = raw_smp_processor_id();
-		if (cpup)
-			err |= put_user(cpu, cpup);
-		if (nodep)
-			err |= put_user(cpu_to_node(cpu), nodep);
-		if (cache) {
-		/*
-		 * The cache is not needed for this implementation,
-		 * but make sure user programs pass something
-		 * valid. vsyscall implementations can instead make
-		 * good use of the cache. Only use t0 and t1 because
-		 * these are available in both 32bit and 64bit ABI (no
-		 * need for a compat_getcpu). 32bit has enough
-		 * padding
-		 */
-			unsigned long t0, t1;
-			get_user(t0, &cache->blob[0]);
-			get_user(t1, &cache->blob[1]);
-			t0++;
-			t1++;
-			put_user(t0, &cache->blob[0]);
-			put_user(t1, &cache->blob[1]);
-		}
-		return err ? -EFAULT : 0;
-	}
+    asmlinkage long sys_getcpu(unsigned __user *cpup, unsigned __user *nodep,
+        struct getcpu_cache __user *cache)
+    {
+        int err = 0;
+        int cpu = raw_smp_processor_id();
+        if (cpup)
+            err |= put_user(cpu, cpup);
+        if (nodep)
+            err |= put_user(cpu_to_node(cpu), nodep);
+        if (cache) {
+        /*
+         * The cache is not needed for this implementation,
+         * but make sure user programs pass something
+         * valid. vsyscall implementations can instead make
+         * good use of the cache. Only use t0 and t1 because
+         * these are available in both 32bit and 64bit ABI (no
+         * need for a compat_getcpu). 32bit has enough
+         * padding
+         */
+            unsigned long t0, t1;
+            get_user(t0, &cache->blob[0]);
+            get_user(t1, &cache->blob[1]);
+            t0++;
+            t1++;
+            put_user(t0, &cache->blob[0]);
+            put_user(t1, &cache->blob[1]);
+        }
+        return err ? -EFAULT : 0;
+    }
 
-	char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
+    char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
 
-	static void argv_cleanup(char **argv, char **envp)
-	{
-		argv_free(argv);
-	}
+    static void argv_cleanup(char **argv, char **envp)
+    {
+        argv_free(argv);
+    }
 
 /**
  * orderly_poweroff - Trigger an orderly system poweroff
@@ -2316,138 +2316,148 @@ asmlinkage long sys_setpriority(int which, int who, int niceval)
  * This may be called from any context to trigger a system shutdown.
  * If the orderly shutdown fails, it will force an immediate shutdown.
  */
-	int orderly_poweroff(bool force)
-	{
-		int argc;
-		char **argv = argv_split(GFP_ATOMIC, poweroff_cmd, &argc);
-		static char *envp[] = {
-			"HOME=/",
-			"PATH=/sbin:/bin:/usr/sbin:/usr/bin",
-			NULL
-		};
-		int ret = -ENOMEM;
-		struct subprocess_info *info;
+    int orderly_poweroff(bool force)
+    {
+        int argc;
+        char **argv = argv_split(GFP_ATOMIC, poweroff_cmd, &argc);
+        static char *envp[] = {
+            "HOME=/",
+            "PATH=/sbin:/bin:/usr/sbin:/usr/bin",
+            NULL
+        };
+        int ret = -ENOMEM;
+        struct subprocess_info *info;
 
-		if (argv == NULL) {
-			printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
-				__func__, poweroff_cmd);
-			goto out;
-		}
+        if (argv == NULL) {
+            printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+                __func__, poweroff_cmd);
+            goto out;
+        }
 
-		info = call_usermodehelper_setup(argv[0], argv, envp);
-		if (info == NULL) {
-			argv_free(argv);
-			goto out;
-		}
+        info = call_usermodehelper_setup(argv[0], argv, envp);
+        if (info == NULL) {
+            argv_free(argv);
+            goto out;
+        }
 
-		call_usermodehelper_setcleanup(info, argv_cleanup);
+        call_usermodehelper_setcleanup(info, argv_cleanup);
 
-		ret = call_usermodehelper_exec(info, UMH_NO_WAIT);
+        ret = call_usermodehelper_exec(info, UMH_NO_WAIT);
 
-		out:
-		if (ret && force) {
-			printk(KERN_WARNING "Failed to start orderly shutdown: "
-				"forcing the issue\n");
+        out:
+        if (ret && force) {
+            printk(KERN_WARNING "Failed to start orderly shutdown: "
+                "forcing the issue\n");
 
-		/* I guess this should try to kick off some daemon to
-		   sync and poweroff asap.  Or not even bother syncing
-		   if we're doing an emergency shutdown? */
-			emergency_sync();
-			kernel_power_off();
-		}
+        /* I guess this should try to kick off some daemon to
+           sync and poweroff asap.  Or not even bother syncing
+           if we're doing an emergency shutdown? */
+            emergency_sync();
+            kernel_power_off();
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 
-/* CREATE CUSTOM PROD/CON UP AND DOWN SEMAPHORE MUTEX IMPLEMENTATION */
-	DEFINE_SPINLOCK(sem_lock);	
 
-	/*
-		This custom DOWN operation will perform a kernel lock and then
-		operate on the given semaphore. This semaphore will be changed to
-		reflect that a named resource has been decremented. At any time that
-		the semaphore's value becomes negative, then this will trigger a 
-		SLEEP event. The process will be put to sleep and a SCHEDULE event
-		will be triggered to run another (any) ready process.
+/*
+    -----------------------------------------------------------------
+    CUSTOM CS1550 PROD/CON UP AND DOWN SEMAPHORE MUTEX IMPLEMENTATION
+    -----------------------------------------------------------------
+*/
 
-		During this operation, no other process may alter this semaphore. 
-		This is the definition of a CRITICAL REGION.
-	*/
-	asmlinkage long sys_cs1550_down(struct cs1550_sem *sem) 
-	{
-		/* ENTER CRITICAL REGION (set the kernel lock) */
-		spin_lock(sem_lock);
+    DEFINE_SPINLOCK(sem_lock);                      // define a special kernel lock
 
-		sem->value--;
-		if (sem->value < 0) {				// ENQUEUE the current process
-			/* create a new task node to enqueue */
-			struct proc_node *node = (struct proc_node *) kmalloc(sizeof(struct proc_node), GFP_KERNEL);
+    /*
+        This custom DOWN operation will perform a kernel lock and then
+        operate on the given semaphore. This semaphore will be changed to
+        reflect that a named resource has been decremented. At any time that
+        the semaphore's value becomes negative, then this will trigger a 
+        SLEEP event. The process will be put to sleep and a SCHEDULE event
+        will be triggered to run another (any) ready process.
 
-			node->process = current;		// global 'CURRENT' holds current process (task_struct)
-			node->next = NULL;			// new nodes will never reference anything
+        During this operation, no other process may alter this semaphore. 
+        This is the definition of a CRITICAL REGION.
+    */
+    asmlinkage long sys_cs1550_down(struct cs1550_sem *sem) 
+    {
+        /* ENTER CRITICAL REGION (set the kernel lock) */
+        spin_lock(sem_lock);
 
-			if (sem->head == NULL) {
-				sem->head = node;		// insert node at head (enqueue) b/c queue is empty
-			} else {
-				sem->tail->next = node;		// insert node after tail (enqueue)
-			}
-			sem->tail = node;			// this node becomes the new tail
+        sem->value--;
+        if (sem->value < 0) {                       // ENQUEUE the current process
+            /* create a new task node to enqueue */
+            struct proc_node *node = (struct proc_node *) kmalloc(sizeof(struct proc_node), GFP_KERNEL);
 
-			set_current_state(TASK_INTERRUPTIBLE);	// allow immediate interrupt (aka SLEEP)
-			spin_unlock(sem_lock);			// release lock now to avoid deadlock
-			schedule();				// tell OS to schedule another process (CONTEXT-SWITCH)
-		}
+            node->process = current;                // global 'CURRENT' holds current process (task_struct)
+            node->next = NULL;                      // new nodes will never reference anything
 
-		spin_unlock(sem_lock);
-		/* EXIT CRITICAL REGION (release the kernel lock) */
-		
-		return 0;
-	}
+            if (sem->head == NULL) {
+                sem->head = node;                   // insert node at head (enqueue) b/c queue is empty
+            } else {
+                sem->tail->next = node;             // insert node after tail (enqueue)
+            }
+            sem->tail = node;                       // this node becomes the new tail
 
-	/*
-		This custom UP operation will perform a kernel lock and then
-		operate on the given semaphore. This semaphore will be changed to
-		reflect that a named resource has been incremented. At any time that
-		the semaphore's value remains zero or negative, then this will trigger
-		a WAKE event. The earliest-queued process in the process list will be
-		dequeued and then woken up. Upon being woken up, it can then be chosen
-		by the scheduler to run.
+            set_current_state(TASK_INTERRUPTIBLE);  // allow immediate interrupt (aka SLEEP)
+            spin_unlock(sem_lock);                  // release lock now to avoid deadlock
+            schedule();                             // tell OS to schedule another process (CONTEXT-SWITCH)
+        }
 
-		During this operation, no other process may alter this semaphore. 
-		This is the definition of a CRITICAL REGION.
-	*/
-	asmlinkage long sys_cs1550_up(struct cs1550_sem *sem) 
-	{
-		/* ENTER CRITICAL REGION (set the kernel lock) */
-		spin_lock(sem_lock);
+        spin_unlock(sem_lock);
+        /* EXIT CRITICAL REGION (release the kernel lock) */
+        
+        return 0;
+    }
 
-		sem->value++;
-		if (sem->value <= 0) {				// DEQUEUE a process to run (FiFo)
-			/* find process to dequeue (if any) */
+    /*
+        This custom UP operation will perform a kernel lock and then
+        operate on the given semaphore. This semaphore will be changed to
+        reflect that a named resource has been incremented. At any time that
+        the semaphore's value remains zero or negative, then this will trigger
+        a WAKE event. The earliest-queued process in the process list will be
+        dequeued and then woken up. Upon being woken up, it can then be chosen
+        by the scheduler to run.
 
-			struct proc_node *node = sem->head;	// get the head of the process queue/list
-			struct task_struct *proc;		// will hold the dequeued process
-			if (node != NULL) {						
-				proc = node->process;		// get first-in node (dequeue)
+        During this operation, no other process may alter this semaphore. 
+        This is the definition of a CRITICAL REGION.
+    */
+    asmlinkage long sys_cs1550_up(struct cs1550_sem *sem) 
+    {
+        /* ENTER CRITICAL REGION (set the kernel lock) */
+        spin_lock(sem_lock);
 
-				if (node != sem->tail) {
-					sem->head = node->next;	// head moved to the next node. old head will be freed.
-				} else {
-					sem->head = NULL;	// we have dequeued all nodes; purge.
-					sem->tail = NULL;	// we have dequeued all nodes; purge.
-				}
+        sem->value++;
+        if (sem->value <= 0) {                      // DEQUEUE a process to run (FiFo)
+            /* find process to dequeue (if any) */
 
-				wake_up_process(proc);		// wake-up this dequeued process
-			}
-			
-			kfree(node);				// clean-up/free this node. it has been dequeued and woke-up.
-		}
+            struct proc_node *node = sem->head;     // get the head of the process queue/list
+            struct task_struct *proc;               // will hold the dequeued process
+            if (node != NULL) {                        
+                proc = node->process;               // get first-in node (dequeue)
 
-		spin_unlock(sem_lock);
-		/* EXIT CRITICAL REGION (release the kernel lock) */
-		
-		return 0;
-	}
-/* END */
+                if (node != sem->tail) {
+                    sem->head = node->next;         // head moved to the next node. old head will be freed.
+                } else {
+                    sem->head = NULL;               // we have dequeued all nodes; purge.
+                    sem->tail = NULL;               // we have dequeued all nodes; purge.
+                }
 
-	EXPORT_SYMBOL_GPL(orderly_poweroff);
+                wake_up_process(proc);              // wake-up this dequeued process
+            }
+            
+            kfree(node);                            // clean-up/free this node. it has been dequeued and woke-up.
+        }
+
+        spin_unlock(sem_lock);
+        /* EXIT CRITICAL REGION (release the kernel lock) */
+        
+        return 0;
+    }
+/*
+    ---------------------------------------------------------------------
+    END CUSTOM CS1550 PROD/CON UP AND DOWN SEMAPHORE MUTEX IMPLEMENTATION
+    ---------------------------------------------------------------------
+*/
+
+    EXPORT_SYMBOL_GPL(orderly_poweroff);
