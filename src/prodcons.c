@@ -3,9 +3,6 @@
 
     Joe Meszar (jwm54@pitt.edu)
     CS1550 Project 2 (FALL 2016)
-
-    Skeleton code for prodcons problem
-    (C) Mohammad H. Mofrad, 2016
  */
 #include <linux/prodcons.h>     /* custom UP() and DOWN() syscalls */
 #include <stdio.h>              /* printf() */
