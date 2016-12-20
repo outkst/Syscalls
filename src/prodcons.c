@@ -2,7 +2,7 @@
     Syscalls (Producer/Consumer problem)
 
     Joe Meszar (jwm54@pitt.edu)
-    CS1550 Project 1 (FALL 2016)
+    CS1550 Project 2 (FALL 2016)
 
     Skeleton code for prodcons problem
     (C) Mohammad H. Mofrad, 2016
