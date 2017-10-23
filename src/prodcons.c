@@ -68,8 +68,7 @@ int main(int argc, char *argv[])
     }
 
     /* 
-        Good to go, initialize pointers to this 
-        newly mapped, shared space.
+        Good to go. Initialize pointers to this newly mapped, shared space.
 
         WHAT: [(   EMPTY  ) (   FULL   ) (   MUTEX  ) (CURRENT_PROD_PLACE) (CURRENT_CONS_PLACE) (WORKING_BUFFER )]
         SIZE: [(cs1550_sem) (cs1550_sem) (cs1550_sem) (       int        ) (       int        ) (int*size_buffer)]
@@ -80,7 +79,7 @@ int main(int argc, char *argv[])
     MEM_MUTEX = MEM_FULL + sem_size;                // MUTEX sem at third location of mapped memory
     MEM_CUR_PROD = MEM_MUTEX + sem_size;            // CURRENT PRODUCER resource number
     MEM_CUR_CON = MEM_CUR_PROD + sizeof(int);       // CURRENT CONSUMER resource number
-    MEM_BUF = MEM_CUR_CON + sem_size;               // BUFFER at sixth (final) location of mapped memory
+    MEM_BUF = MEM_CUR_CON + sizeof(int);            // BUFFER at sixth (final) location of mapped memory
 
     sem_empty = (struct cs1550_sem *) MEM_EMPTY;    // make MEM_EMPTY reference into cs1550_sem reference
     sem_full = (struct cs1550_sem *) MEM_FULL;      // make MEM_FULL reference into cs1550_sem reference
@@ -99,14 +98,14 @@ int main(int argc, char *argv[])
     i = 0;
     j = 0;
     for (i=0; i<num_prods; i++) {
-        if (fork() == 0) {                          // 0 means its a child process, not parent (good!)
+        if (fork() == 0) {                          // 0 means it's a child process, not parent (good!)
             producer(i);                            // use method w/infinite loop (no return)
         }
     }
 
     /* Create X number of consumers */
     for (j=0; j<num_cons; j++) {
-        if (fork() == 0) {                          // 0 means its a child process, not parent (good!)
+        if (fork() == 0) {                          // 0 means it's a child process, not parent (good!)
             consumer(j);                            // use method w/infinite loop (no return)
         }
     }
