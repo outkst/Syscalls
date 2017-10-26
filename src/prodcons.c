@@ -89,9 +89,9 @@ int main(int argc, char *argv[])
     out = MEM_CUR_CON;                              // make MEM_CUR_CON reference into (int) reference
     resources = size_buffer;                        // global shared resources equal to user-input buffer size
 
-    sem_empty->value = size_buffer;                 // value is equal to max resources (size of buffer)
+    sem_empty->value = size_buffer;                 // start with all items empty. value equal to max resources (size of buffer)
     sem_full->value = 0;                            // no item is considered full in the beginning
-    sem_mutex->value = 1;                           // mutex set to '1' so that one process can successfully run. the rest are queued.
+    sem_mutex->value = 1;                           // mutex set to '1' so that ONLY one process can run; the rest are queued
 
     /* Create X number of producers */
     int i, j;
